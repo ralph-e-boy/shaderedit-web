@@ -7,12 +7,14 @@ export class UIManager {
         this.settings = settings;
         this.isEditorOpen = false;
         this.isFullscreen = false;
+        this.isUIHidden = false;
         this.shaderLibrary = new ShaderLibrary();
     }
 
     async init() {
         await this.shaderLibrary.init();
         this.setupEventListeners();
+        this.setupDragAndDrop();
         this.createMenuBar();
         this.createSettingsPanel();
         this.createShaderLibraryPanel();
@@ -62,7 +64,6 @@ export class UIManager {
                     <div class="menu-option" data-action="save">Save</div>
                     <div class="separator"></div>
                     <div class="menu-option" data-action="export-png">Export PNG</div>
-                    <div class="menu-option" data-action="export-gif">Export GIF</div>
                 </div>
             </div>
             <div class="menu-item" data-menu="edit">
@@ -86,7 +87,6 @@ export class UIManager {
                 <span>Shader</span>
                 <div class="dropdown">
                     <div class="menu-option" data-action="library">Library</div>
-                    <div class="menu-option" data-action="examples">Examples</div>
                 </div>
             </div>
             <div class="menu-edit-button">
@@ -180,11 +180,21 @@ export class UIManager {
             case 'library':
                 this.showShaderLibrary();
                 break;
+            case 'open':
+                this.openFile();
+                break;
+            case 'save':
+                this.saveFile();
+                break;
+            case 'export-png':
+                this.exportPNG();
+                break;
+            case 'toggle-ui':
+                this.toggleUIVisibility();
+                break;
             case 'toggle-editor':
                 this.toggleEditor();
                 break;
-            default:
-                console.log('Menu action not yet implemented:', action);
         }
     }
 
@@ -456,7 +466,7 @@ export class UIManager {
                     break;
                 case 's':
                     e.preventDefault();
-                    // Save functionality
+                    this.saveFile();
                     break;
                 case ',':
                     e.preventDefault();
@@ -467,7 +477,11 @@ export class UIManager {
 
         // Escape key
         if (e.key === 'Escape') {
-            if (document.getElementById('settingsPanel').classList.contains('show')) {
+            if (this.isUIHidden) {
+                this.showUI();
+            } else if (document.getElementById('shaderLibraryPanel').classList.contains('show')) {
+                this.hideShaderLibrary();
+            } else if (document.getElementById('settingsPanel').classList.contains('show')) {
                 this.hideSettings();
             } else if (this.isEditorOpen) {
                 this.closeEditor();
@@ -475,6 +489,122 @@ export class UIManager {
                 document.exitFullscreen();
             }
         }
+    }
+
+    openFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.glsl,.frag,.vert,.txt';
+        input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 1024 * 1024) {
+                alert('File is too large. Shader files should be under 1MB.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                this.editor.setCode(event.target.result);
+                if (!this.isEditorOpen) {
+                    this.toggleEditor();
+                }
+            };
+            reader.onerror = () => alert('Failed to read file.');
+            reader.readAsText(file);
+        });
+        input.click();
+    }
+
+    saveFile() {
+        const code = this.editor.getCode();
+        const blob = new Blob([code], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'shader.glsl';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    exportPNG() {
+        const canvas = this.editor.renderer.canvas;
+        this.editor.renderer.render();
+        const dataURL = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = 'shader-export.png';
+        a.click();
+    }
+
+    toggleUIVisibility() {
+        this.isUIHidden = true;
+        document.getElementById('menuBar').style.display = 'none';
+        document.getElementById('editBtn').style.display = 'none';
+        if (this.isEditorOpen) {
+            this.closeEditor();
+        }
+        this.showRestoreHint();
+    }
+
+    showRestoreHint() {
+        let hint = document.getElementById('uiRestoreHint');
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'uiRestoreHint';
+            hint.className = 'ui-restore-hint';
+            hint.textContent = 'Press ESC or click here to show UI';
+            hint.addEventListener('click', () => this.showUI());
+            document.body.appendChild(hint);
+        }
+        hint.style.display = 'block';
+        hint.style.opacity = '1';
+        setTimeout(() => { hint.style.opacity = '0.15'; }, 3000);
+    }
+
+    showUI() {
+        this.isUIHidden = false;
+        document.getElementById('menuBar').style.display = 'flex';
+        document.getElementById('editBtn').style.display = 'block';
+        const hint = document.getElementById('uiRestoreHint');
+        if (hint) hint.style.display = 'none';
+    }
+
+    setupDragAndDrop() {
+        const body = document.body;
+        body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            body.classList.add('drag-over');
+        });
+        body.addEventListener('dragleave', (e) => {
+            if (e.relatedTarget === null) {
+                body.classList.remove('drag-over');
+            }
+        });
+        body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            body.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!['.glsl', '.frag', '.vert', '.txt'].includes(ext)) {
+                alert('Please drop a shader file (.glsl, .frag, .vert, or .txt)');
+                return;
+            }
+            if (file.size > 1024 * 1024) {
+                alert('File is too large. Shader files should be under 1MB.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                this.editor.setCode(event.target.result);
+                if (!this.isEditorOpen) {
+                    this.toggleEditor();
+                }
+            };
+            reader.onerror = () => alert('Failed to read file.');
+            reader.readAsText(file);
+        });
     }
 
     handleSettingsChange(detail) {
@@ -512,7 +642,7 @@ export class UIManager {
         const editBtn = document.getElementById('editBtn');
         const menuBar = document.getElementById('menuBar');
 
-        if (this.isFullscreen) {
+        if (this.isFullscreen || this.isUIHidden) {
             editBtn.style.display = 'none';
             menuBar.style.display = 'none';
         } else {

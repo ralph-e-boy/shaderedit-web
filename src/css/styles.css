@@ -697,6 +697,51 @@ body {
     box-shadow: 0 4px 8px rgba(255, 107, 107, 0.4);
 }
 
+/* Drag-and-drop overlay */
+body.drag-over::after {
+    content: 'Drop shader file here';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 255, 136, 0.15);
+    border: 3px dashed rgba(0, 255, 136, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #00ff88;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* UI restore hint (shown when UI is hidden) */
+.ui-restore-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    cursor: pointer;
+    z-index: 1000;
+    transition: opacity 1s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ui-restore-hint:hover {
+    opacity: 1 !important;
+    background: rgba(30, 30, 30, 0.95);
+    color: #fff;
+}
+
 /* Mobile responsiveness for library */
 @media (max-width: 768px) {
     .library-header {

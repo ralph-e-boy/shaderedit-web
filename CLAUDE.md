@@ -4,67 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a browser-based GLSL fragment shader editor that provides real-time shader compilation and rendering using WebGL. The entire application is contained in a single `index.html` file with embedded CSS, JavaScript, and default shader code.
+Browser-based GLSL fragment shader editor with real-time WebGL rendering. Pure vanilla JavaScript with ES6 modules — no build system, no dependencies.
 
 ## Architecture
 
-**Single-file application structure:**
-- `index.html` - Contains the complete application (HTML structure, CSS styles, JavaScript logic, and default GLSL shader)
-- No build system, package.json, or external dependencies
-- Pure vanilla JavaScript with WebGL API
-- Self-contained with inline syntax highlighting for GLSL
+```
+index.html              # Minimal shell: canvas, editor overlay, script module entry
+src/
+  css/styles.css        # All UI styling (dark/light themes, responsive)
+  js/
+    main.js             # Entry point — initializes and coordinates all modules
+    renderer.js         # WebGL context, shader compilation, render loop, mouse tracking
+    editor.js           # Code editor: syntax highlighting, vim mode, auto-compile, tab handling
+    ui.js               # Menu bar, settings panel, shader library panel, keyboard shortcuts
+    settings.js         # Persistent settings via localStorage (dispatches settingsChanged events)
+    shader-library.js   # Built-in shader presets + custom shader save/load/delete
+  shaders/              # GLSL fragment shader files (default.glsl, fractal-mandelbrot.glsl, etc.)
+.llm/todo.md            # Implementation roadmap (7 phases)
+```
 
-**Key components:**
-- **Canvas rendering**: Full-screen WebGL canvas for shader output
-- **Overlay editor**: Modal editor panel with syntax highlighting and error display
-- **Shader compilation**: Real-time GLSL fragment shader compilation with error handling
-- **Animation loop**: Continuous rendering with time and resolution uniforms
+**Module coordination:** `main.js` creates `ShaderApp` which instantiates ShaderRenderer, ShaderEditor, SettingsManager, and UIManager. Settings changes propagate via custom `settingsChanged` DOM events.
 
-**WebGL pipeline:**
-- Simple vertex shader creates a full-screen quad
-- Fragment shader receives `time` (float) and `resolution` (vec2) uniforms
-- Error handling displays compilation errors in the editor UI
+**WebGL pipeline:** Full-screen quad via triangle strip (4 vertices). Simple passthrough vertex shader. Fragment shaders compiled on-the-fly with error reporting back to the editor UI.
+
+**State persistence:** `localStorage` keys: `shaderEditorSettings` (user prefs), `customShaders` (saved shader library, max 50).
 
 ## Development
 
-**Running the application:**
+Requires an HTTP server (ES6 modules don't work over file://):
 ```bash
-# Serve locally (any HTTP server works)
 python3 -m http.server 8000
-# OR
+# or
 npx serve .
-# OR simply open index.html in a browser (file:// protocol works)
 ```
 
-**Testing shaders:**
-- Click "Edit Shader" button to open the editor
-- Modify GLSL code in the textarea
-- Click "Apply & Close" to compile and render
-- Compilation errors appear in red banner above editor
+No tests, no linter, no build step. Manual testing by editing shaders in the browser.
 
-**Code structure within index.html:**
-- Lines 7-150: CSS styles for UI and editor
-- Lines 173-217: Default fragment shader (spiral animation)
-- Lines 230-235: Vertex shader source
-- Lines 237-254: GLSL syntax highlighter
-- Lines 256-307: Shader compilation and WebGL setup
-- Lines 309-325: Render loop
-- Lines 327-358: Event handlers and initialization
+## Shader Uniforms
 
-## Shader Development
+All uniforms are optional — shaders can declare any subset:
 
-**Available uniforms:**
-- `uniform float time` - Elapsed time in seconds since shader start
-- `uniform vec2 resolution` - Canvas dimensions in pixels
+| Uniform | Type | Description |
+|---------|------|-------------|
+| `time` | `float` | Elapsed seconds since shader start |
+| `resolution` | `vec2` | Canvas dimensions in pixels |
+| `mouse` | `vec2` | Normalized mouse position [0,1], Y-flipped |
+| `mouseClick` | `vec2` | Last click position (normalized) |
+| `mouseDown` | `float` | Mouse button state (0.0 or 1.0) |
 
-**GLSL conventions:**
-- Fragment shader must output to `gl_FragColor`
-- Use `gl_FragCoord.xy` for pixel coordinates
-- Normalize coordinates: `(gl_FragCoord.xy - 0.5 * resolution.xy) / min(resolution.x, resolution.y)`
+**GLSL conventions:** Output to `gl_FragColor`. Normalize coordinates with `(gl_FragCoord.xy - 0.5 * resolution.xy) / min(resolution.x, resolution.y)`.
 
-**Common patterns in default shader:**
-- Distance field calculations: `length(uv)`
-- Polar coordinates: `atan(uv.y, uv.x)`
-- Time-based animation: `sin(pattern + time)`
-- Color mixing: `mix(color1, color2, factor)`
-- Vignette effects: `smoothstep(inner, outer, distance)`
+## Key UI Features
+
+- **Auto-compilation**: Debounced (300ms) recompilation on every edit; errors shown in red banner
+- **Vim mode**: Basic normal/insert mode (toggled in settings, default ON)
+- **Shader library**: 6 built-in presets across categories (fractals, nature, geometric, trippy); users can save custom shaders
+- **Keyboard shortcuts**: Ctrl+E (toggle editor), Ctrl+S (save), Ctrl+, (settings), ESC (close/exit fullscreen)
