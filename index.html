@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Shader Editor - The Ultimate GLSL Playground 🔥</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body class="dark-theme">
+    <canvas id="canvas"></canvas>
+    <button id="editBtn">Edit Shader</button>
+
+    <div id="editorOverlay">
+        <div id="editorPanel">
+            <div id="editorHeader">
+                <h2>Fragment Shader Editor</h2>
+                <button id="applyBtn">Apply & Close</button>
+            </div>
+            <div id="errorMsg"></div>
+            <div id="codeContainer">
+                <div id="highlighted"></div>
+                <textarea id="codeEditor" spellcheck="false"></textarea>
+            </div>
+            <div id="editorFooter">
+                <strong>🔥 Epic Mode:</strong> Uniforms available:
+                <span style="color: #4EC9B0">time</span> (float),
+                <span style="color: #4EC9B0">resolution</span> (vec2),
+                <span style="color: #4EC9B0">mouse</span> (vec2),
+                <span style="color: #4EC9B0">mouseClick</span> (vec2),
+                <span style="color: #4EC9B0">mouseDown</span> (float)
+                | <strong>Vim Mode:</strong> ESC=normal, i=insert |
+                <strong>Shortcuts:</strong> Ctrl+E=editor, Ctrl+S=save, Ctrl+,=settings
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/js/main.js"></script>
+</body>
+</html>
