@@ -232,15 +232,6 @@ export class UIManager {
                         <input type="range" id="fontSize" min="10" max="24" value="${this.settings.get('fontSize')}" />
                         <span class="value">${this.settings.get('fontSize')}px</span>
                     </div>
-                    <div class="setting-group">
-                        <label>
-                            <select id="theme">
-                                <option value="dark" ${this.settings.get('theme') === 'dark' ? 'selected' : ''}>Dark</option>
-                                <option value="light" ${this.settings.get('theme') === 'light' ? 'selected' : ''}>Light</option>
-                            </select>
-                            Theme
-                        </label>
-                    </div>
                 </div>
             </div>
         `;
@@ -374,8 +365,17 @@ export class UIManager {
             });
         }
 
-        // Shader actions
+        // Shader actions and category toggles
         libraryContent.addEventListener('click', (e) => {
+            // Category header toggle
+            const categoryHeader = e.target.closest('[data-toggle-category]');
+            if (categoryHeader) {
+                const cat = categoryHeader.dataset.toggleCategory;
+                this.shaderLibrary.toggleCategory(cat);
+                this.updateLibraryContent();
+                return;
+            }
+
             const action = e.target.dataset.action;
             const shaderName = e.target.dataset.shader;
 
@@ -432,20 +432,17 @@ export class UIManager {
     }
 
     handleShaderSearch(query) {
-        const libraryGrid = document.querySelector('.library-grid');
-        if (!libraryGrid) return;
+        const librarySections = document.querySelector('.library-sections');
+        if (!librarySections) return;
 
         if (query.trim() === '') {
-            // Show all shaders in current category
-            const shaders = this.shaderLibrary.getShadersByCategory(this.shaderLibrary.currentCategory);
-            libraryGrid.innerHTML = shaders.map(shader => this.shaderLibrary.createShaderCard(shader)).join('');
+            // Restore full accordion view
+            this.updateLibraryContent();
         } else {
-            // Show search results
+            // Show flat search results (shader data is from trusted built-in presets)
             const results = this.shaderLibrary.searchShaders(query);
-            libraryGrid.innerHTML = results.map(shader => this.shaderLibrary.createShaderCard(shader)).join('');
+            librarySections.innerHTML = results.map(shader => this.shaderLibrary.createShaderRow(shader)).join('');
         }
-
-        this.setupLibraryEventListeners();
     }
 
     toggleFullscreen() {
@@ -619,9 +616,6 @@ export class UIManager {
             case 'fontSize':
                 this.updateFontSize(value);
                 break;
-            case 'theme':
-                this.updateTheme(value);
-                break;
         }
     }
 
@@ -631,10 +625,6 @@ export class UIManager {
 
         if (editor) editor.style.fontSize = size + 'px';
         if (highlighted) highlighted.style.fontSize = size + 'px';
-    }
-
-    updateTheme(theme) {
-        document.body.className = theme + '-theme';
     }
 
     updateUI() {

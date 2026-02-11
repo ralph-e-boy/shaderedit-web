@@ -4,6 +4,7 @@ export class ShaderLibrary {
         this.presets = {};
         this.customShaders = [];
         this.currentCategory = 'all';
+        this.collapsedCategories = new Set();
         this.init();
     }
 
@@ -15,16 +16,28 @@ export class ShaderLibrary {
     async loadPresets() {
         // Define built-in shader presets
         this.presets = {
-            'Spiraling Madness': {
-                file: './src/shaders/default.glsl',
-                category: 'trippy',
-                description: 'Hypnotic spiral patterns with color cycling',
-                uniforms: ['time', 'resolution']
-            },
             'Mandelbrot Fractal': {
                 file: './src/shaders/fractal-mandelbrot.glsl',
                 category: 'fractals',
                 description: 'Interactive Mandelbrot set with smooth coloring',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Julia Set': {
+                file: './src/shaders/fractal-julia.glsl',
+                category: 'fractals',
+                description: 'Animated Julia set with shifting constants',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Sierpinski Triangle': {
+                file: './src/shaders/fractal-sierpinski.glsl',
+                category: 'fractals',
+                description: 'Iterated function system Sierpinski with rainbow edges',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Burning Ship': {
+                file: './src/shaders/fractal-burning-ship.glsl',
+                category: 'fractals',
+                description: 'Burning Ship fractal variant with fiery palette',
                 uniforms: ['time', 'resolution', 'mouse']
             },
             'Ocean Waves': {
@@ -33,22 +46,70 @@ export class ShaderLibrary {
                 description: 'Professional Gerstner waves with raytracing and realistic water physics',
                 uniforms: ['time', 'resolution', 'mouse']
             },
-            'Geometric Tunnel': {
-                file: './src/shaders/geometric-tunnel.glsl',
-                category: 'geometric',
-                description: 'Pulsing tunnel with electric arcs',
-                uniforms: ['time', 'resolution', 'mouse']
-            },
             'Fire Storm': {
                 file: './src/shaders/noise-fire.glsl',
                 category: 'nature',
                 description: 'Realistic fire with embers and wind effects',
                 uniforms: ['time', 'resolution', 'mouse']
             },
+            'Aurora Borealis': {
+                file: './src/shaders/nature-aurora.glsl',
+                category: 'nature',
+                description: 'Northern lights with layered curtains and starfield',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Clouds': {
+                file: './src/shaders/nature-clouds.glsl',
+                category: 'nature',
+                description: 'Volumetric cloud layers drifting across a sunny sky',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Geometric Tunnel': {
+                file: './src/shaders/geometric-tunnel.glsl',
+                category: 'geometric',
+                description: 'Pulsing tunnel with electric arcs',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Kaleidoscope': {
+                file: './src/shaders/geometric-kaleidoscope.glsl',
+                category: 'geometric',
+                description: 'Mirrored kaleidoscope with adjustable segments',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Voronoi Cells': {
+                file: './src/shaders/geometric-voronoi.glsl',
+                category: 'geometric',
+                description: 'Animated Voronoi diagram with glowing edges',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Truchet Tiles': {
+                file: './src/shaders/geometric-truchet.glsl',
+                category: 'geometric',
+                description: 'Interlocking quarter-circle arcs forming maze patterns',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Spiraling Madness': {
+                file: './src/shaders/default.glsl',
+                category: 'trippy',
+                description: 'Hypnotic spiral patterns with color cycling',
+                uniforms: ['time', 'resolution']
+            },
             'DNA Helix': {
                 file: './src/shaders/trippy-dna.glsl',
                 category: 'trippy',
                 description: 'Electric DNA helix with particle effects',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Plasma': {
+                file: './src/shaders/trippy-plasma.glsl',
+                category: 'trippy',
+                description: 'Classic plasma effect with layered sine waves',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            'Warp Speed': {
+                file: './src/shaders/trippy-warp.glsl',
+                category: 'trippy',
+                description: 'Hyperspace star tunnel with radial streaks',
                 uniforms: ['time', 'resolution', 'mouse']
             }
         };
@@ -117,7 +178,7 @@ export class ShaderLibrary {
 
     extractUniforms(code) {
         const uniforms = [];
-        const uniformRegex = /uniform\\s+(\\w+)\\s+(\\w+);/g;
+        const uniformRegex = /uniform\s+(\w+)\s+(\w+);/g;
         let match;
 
         while ((match = uniformRegex.exec(code)) !== null) {
@@ -174,6 +235,10 @@ export class ShaderLibrary {
         return Array.from(categories);
     }
 
+    getCategoryOrder() {
+        return ['fractals', 'nature', 'geometric', 'trippy', 'custom'];
+    }
+
     searchShaders(query) {
         const lowerQuery = query.toLowerCase();
         return this.getAllShaders().filter(shader =>
@@ -183,13 +248,58 @@ export class ShaderLibrary {
         );
     }
 
+    toggleCategory(category) {
+        if (this.collapsedCategories.has(category)) {
+            this.collapsedCategories.delete(category);
+        } else {
+            this.collapsedCategories.add(category);
+        }
+    }
+
     createLibraryHTML() {
         const categories = this.getCategories();
         const shaders = this.getShadersByCategory(this.currentCategory);
 
+        // Group shaders by category
+        const grouped = {};
+        for (const shader of shaders) {
+            if (!grouped[shader.category]) {
+                grouped[shader.category] = [];
+            }
+            grouped[shader.category].push(shader);
+        }
+
+        // Build accordion sections in defined order
+        const order = this.getCategoryOrder();
+        const sortedCategories = Object.keys(grouped).sort((a, b) => {
+            const ai = order.indexOf(a);
+            const bi = order.indexOf(b);
+            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+
+        const sectionsHTML = sortedCategories.map(cat => {
+            const items = grouped[cat];
+            const isCollapsed = this.collapsedCategories.has(cat);
+            const chevron = isCollapsed ? '&#9654;' : '&#9660;';
+
+            return `
+                <div class="library-category" data-category="${cat}">
+                    <div class="category-header" data-toggle-category="${cat}">
+                        <span class="category-chevron">${chevron}</span>
+                        <span class="category-icon">${this.getCategoryIcon(cat)}</span>
+                        <span class="category-name">${this.getCategoryLabel(cat)}</span>
+                        <span class="category-count">${items.length}</span>
+                    </div>
+                    <div class="category-items" style="${isCollapsed ? 'display:none' : ''}">
+                        ${items.map(shader => this.createShaderRow(shader)).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
         return `
             <div class="library-header">
-                <h2>🔥 Epic Shader Library</h2>
+                <h2>Shader Library</h2>
                 <div class="library-controls">
                     <select id="categorySelect">
                         ${categories.map(cat =>
@@ -202,47 +312,49 @@ export class ShaderLibrary {
                     <button id="saveCurrentShader">Save Current</button>
                 </div>
             </div>
-            <div class="library-grid">
-                ${shaders.map(shader => this.createShaderCard(shader)).join('')}
+            <div class="library-sections">
+                ${sectionsHTML}
             </div>
         `;
     }
 
     getCategoryDisplayName(category) {
         const displayNames = {
-            'all': '🌟 All Shaders',
-            'fractals': '🌀 Fractals',
-            'nature': '🌊 Nature',
-            'geometric': '📐 Geometric',
-            'trippy': '🎆 Trippy',
-            'custom': '💾 Custom'
+            'all': 'All Shaders',
+            'fractals': 'Fractals',
+            'nature': 'Nature',
+            'geometric': 'Geometric',
+            'trippy': 'Trippy',
+            'custom': 'Custom'
         };
         return displayNames[category] || category;
     }
 
-    createShaderCard(shader) {
-        const uniformsList = shader.uniforms.join(', ');
-        const presetBadge = shader.isPreset ? '<span class="preset-badge">Built-in</span>' : '<span class="custom-badge">Custom</span>';
+    getCategoryLabel(category) {
+        const labels = {
+            'fractals': 'Fractals',
+            'nature': 'Nature',
+            'geometric': 'Geometric',
+            'trippy': 'Trippy',
+            'custom': 'Custom'
+        };
+        return labels[category] || category;
+    }
+
+    createShaderRow(shader) {
+        const deleteBtn = !shader.isPreset
+            ? `<button class="delete-btn" data-action="delete" data-shader="${shader.name}">Delete</button>`
+            : '';
 
         return `
-            <div class="shader-card" data-shader-name="${shader.name}">
-                <div class="shader-preview">
-                    <!-- Canvas preview would go here -->
-                    <div class="preview-placeholder">
-                        ${this.getCategoryIcon(shader.category)}
-                    </div>
+            <div class="shader-row" data-shader-name="${shader.name}">
+                <div class="shader-row-info">
+                    <span class="shader-row-name">${shader.name}</span>
+                    <span class="shader-row-desc">${shader.description}</span>
                 </div>
-                <div class="shader-info">
-                    <h3>${shader.name}</h3>
-                    <p class="shader-description">${shader.description}</p>
-                    <div class="shader-meta">
-                        ${presetBadge}
-                        <span class="uniforms">Uniforms: ${uniformsList}</span>
-                    </div>
-                    <div class="shader-actions">
-                        <button class="load-btn" data-action="load" data-shader="${shader.name}">Load</button>
-                        ${!shader.isPreset ? `<button class="delete-btn" data-action="delete" data-shader="${shader.name}">Delete</button>` : ''}
-                    </div>
+                <div class="shader-row-actions">
+                    ${deleteBtn}
+                    <button class="load-btn" data-action="load" data-shader="${shader.name}">Load</button>
                 </div>
             </div>
         `;
@@ -250,12 +362,12 @@ export class ShaderLibrary {
 
     getCategoryIcon(category) {
         const icons = {
-            'fractals': '🌀',
-            'nature': '🌊',
-            'geometric': '📐',
-            'trippy': '🎆',
-            'custom': '💾'
+            'fractals': '\u{1F300}',
+            'nature': '\u{1F30A}',
+            'geometric': '\u{1F4D0}',
+            'trippy': '\u{1F386}',
+            'custom': '\u{1F4BE}'
         };
-        return icons[category] || '✨';
+        return icons[category] || '\u{2728}';
     }
 }
