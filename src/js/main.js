@@ -16,7 +16,7 @@ class ShaderApp {
 
     async init() {
         // Load default shader
-        const response = await fetch('./src/shaders/default.glsl');
+        const response = await fetch('./src/shaders/fractal-mandelbrot.glsl');
         const defaultShader = await response.text();
 
         // Initialize components

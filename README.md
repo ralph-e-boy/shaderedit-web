@@ -18,6 +18,10 @@ A web-based GLSL shader editor and playground for creating stunning real-time vi
 ### Fractal Visualization
 ![Fractal](screenshots/fractal.png)
 
+### Voronoi Cells
+![Voronoi](screenshots/voronoi.png)
+
+
 ### Ocean Simulation
 ![Ocean](screenshots/ocean.png)
 
@@ -42,5 +46,9 @@ Open `index.html` in a modern web browser and start creating. Click the "Edit Sh
 - `Ctrl+,` - Open settings
 - `ESC` - Enter vim normal mode
 - `i` - Enter vim insert mode
+
+
+Demo: <https://ralph-e-boy.github.io/shaderedit-web/>
+
 
 
