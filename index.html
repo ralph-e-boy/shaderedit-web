@@ -41,6 +41,31 @@
     <div class="grain" aria-hidden="true"></div>
     <div class="vignette" aria-hidden="true"></div>
 
+    <div id="welcomeOverlay" class="welcome-overlay" aria-hidden="true">
+        <div class="welcome-card">
+            <span class="bracket br-tl" aria-hidden="true"></span>
+            <span class="bracket br-tr" aria-hidden="true"></span>
+            <span class="bracket br-bl" aria-hidden="true"></span>
+            <span class="bracket br-br" aria-hidden="true"></span>
+            <div class="welcome-eyebrow">
+                <span class="we-mark">se.fragment</span>
+                <span class="we-rev">v0.4 · GLSL editor</span>
+            </div>
+            <h1 class="welcome-title">A real-time fragment shader editor.</h1>
+            <p class="welcome-body">
+                Write GLSL on the left; it compiles and runs on the canvas behind, live.
+                Errors highlight in the editor as you type. No build step.
+            </p>
+            <dl class="welcome-keys">
+                <div><dt>⌘E</dt><dd>open / close the editor</dd></div>
+                <div><dt>Shader → Library</dt><dd>preset gallery; start with <em>Basics</em> if new to GLSL</dd></div>
+                <div><dt>⌘S</dt><dd>save the current fragment to a .glsl file</dd></div>
+                <div><dt>⌘,</dt><dd>preferences</dd></div>
+            </dl>
+            <div class="welcome-dismiss">press any key, or click anywhere, to begin</div>
+        </div>
+    </div>
+
     <div id="editorOverlay" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
         <div id="editorPanel">
             <span class="bracket br-tl" aria-hidden="true"></span>

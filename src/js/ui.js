@@ -122,6 +122,15 @@ export class UIManager {
         this.isFullscreen = false;
         this.isUIHidden = false;
         this.shaderLibrary = new ShaderLibrary();
+        this.currentShaderName = 'Fragment';
+    }
+
+    setShaderTitle(name) {
+        this.currentShaderName = name || 'Fragment';
+        const h2 = document.getElementById('editorTitle');
+        if (h2) h2.textContent = this.currentShaderName;
+        const pathName = document.querySelector('.path-mark .path-name');
+        if (pathName) pathName.textContent = (name || 'editor').toLowerCase().replace(/\s+/g, '-');
     }
 
     async init() {
@@ -132,6 +141,40 @@ export class UIManager {
         this.createSettingsPanel();
         this.createShaderLibraryPanel();
         this.updateUI();
+        this.scheduleWelcomeOverlay();
+    }
+
+    scheduleWelcomeOverlay() {
+        const overlay = document.getElementById('welcomeOverlay');
+        if (!overlay) return;
+        let shown = false;
+        let dismissed = false;
+
+        const show = () => {
+            if (dismissed) return;
+            shown = true;
+            overlay.classList.add('is-visible');
+            overlay.setAttribute('aria-hidden', 'false');
+        };
+
+        const dismiss = () => {
+            if (dismissed) return;
+            dismissed = true;
+            if (!shown) {
+                overlay.remove();
+                return;
+            }
+            overlay.classList.remove('is-visible');
+            overlay.classList.add('is-dismissed');
+            overlay.setAttribute('aria-hidden', 'true');
+            setTimeout(() => overlay.remove(), 400);
+            document.removeEventListener('click', dismiss, true);
+            document.removeEventListener('keydown', dismiss, true);
+        };
+
+        setTimeout(show, 500);
+        document.addEventListener('click', dismiss, true);
+        document.addEventListener('keydown', dismiss, true);
     }
 
     setupEventListeners() {
@@ -237,6 +280,7 @@ export class UIManager {
         switch (action) {
             case 'new':
                 this.editor.setCode('// new fragment\nvoid main() {\n    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}\n');
+                this.setShaderTitle('Untitled');
                 break;
             case 'copy':
                 this.editor.copy();
@@ -433,6 +477,7 @@ export class UIManager {
 
         if (shader) {
             this.editor.setCode(shader.code);
+            this.setShaderTitle(shaderName);
             this.hideShaderLibrary();
             if (!this.isEditorOpen) {
                 this.toggleEditor();
@@ -453,6 +498,7 @@ export class UIManager {
             const description = prompt('Brief description (optional):') || '';
             const code = this.editor.getCode();
             this.shaderLibrary.saveCustomShader(name, code, description);
+            this.setShaderTitle(name);
             this.updateLibraryContent();
         }
     }
@@ -574,6 +620,7 @@ export class UIManager {
             const reader = new FileReader();
             reader.onload = (event) => {
                 this.editor.setCode(event.target.result);
+                this.setShaderTitle(file.name.replace(/\.[^.]+$/, ''));
                 if (!this.isEditorOpen) {
                     this.toggleEditor();
                 }
@@ -665,6 +712,7 @@ export class UIManager {
             const reader = new FileReader();
             reader.onload = (event) => {
                 this.editor.setCode(event.target.result);
+                this.setShaderTitle(file.name.replace(/\.[^.]+$/, ''));
                 if (!this.isEditorOpen) {
                     this.toggleEditor();
                 }

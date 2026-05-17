@@ -15,20 +15,17 @@ class ShaderApp {
     }
 
     async init() {
-        // Load default shader
+        const DEFAULT_NAME = 'Mandelbrot Fractal';
         const response = await fetch('./src/shaders/fractal-mandelbrot.glsl');
         const defaultShader = await response.text();
 
-        // Initialize components
         await this.settings.init();
         this.renderer.init();
         this.editor.init(defaultShader);
-        this.ui.init();
+        await this.ui.init();
+        this.ui.setShaderTitle(DEFAULT_NAME);
 
-        // Start rendering
         this.renderer.startRenderLoop();
-
-        console.log('🚀 Epic Shader Editor initialized!');
     }
 }
 
