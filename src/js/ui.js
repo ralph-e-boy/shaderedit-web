@@ -140,6 +140,17 @@ export class UIManager {
             this.closeEditor();
         });
 
+        const editorHeader = document.getElementById('editorHeader');
+        editorHeader && editorHeader.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            if (action === 'font-inc') this.bumpFontSize(+1);
+            else if (action === 'font-dec') this.bumpFontSize(-1);
+        });
+
+        this.syncFontSizeReadout(this.settings.get('fontSize', 14));
+
         document.addEventListener('settingsChanged', (e) => {
             this.handleSettingsChange(e.detail);
         });
@@ -672,8 +683,23 @@ export class UIManager {
                 break;
             case 'fontSize':
                 this.editor.setFontSize(value);
+                this.syncFontSizeReadout(value);
                 break;
         }
+    }
+
+    bumpFontSize(delta) {
+        const cur = this.settings.get('fontSize', 14);
+        const next = Math.max(8, Math.min(32, cur + delta));
+        if (next === cur) return;
+        this.settings.set('fontSize', next);
+        const slider = document.getElementById('fontSize');
+        if (slider) slider.value = next;
+    }
+
+    syncFontSizeReadout(value) {
+        const readout = document.getElementById('fontSizeReadout');
+        if (readout) readout.innerHTML = `${value}<small>pt</small>`;
     }
 
     updateUI() {

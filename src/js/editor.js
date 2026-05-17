@@ -203,6 +203,7 @@ export class ShaderEditor {
             parent: this.container,
         });
 
+        this.setFontSize(fontSize);
         this.compileShader();
         this.updateVimIndicator();
     }
@@ -293,11 +294,10 @@ export class ShaderEditor {
     }
 
     setFontSize(px) {
-        this.view.dispatch({
-            effects: this.fontSizeCompartment.reconfigure(EditorView.theme({
-                '&': { fontSize: `${px}px` },
-            })),
-        });
+        if (this.view && this.view.dom) {
+            this.view.dom.style.fontSize = `${px}px`;
+            this.view.requestMeasure();
+        }
     }
 
     getCode() {
