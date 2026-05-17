@@ -169,12 +169,10 @@ export class UIManager {
             overlay.setAttribute('aria-hidden', 'true');
             setTimeout(() => overlay.remove(), 400);
             document.removeEventListener('click', dismiss, true);
-            document.removeEventListener('keydown', dismiss, true);
         };
 
         setTimeout(show, 500);
         document.addEventListener('click', dismiss, true);
-        document.addEventListener('keydown', dismiss, true);
     }
 
     setupEventListeners() {
