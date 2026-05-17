@@ -123,14 +123,18 @@ export class UIManager {
         this.isUIHidden = false;
         this.shaderLibrary = new ShaderLibrary();
         this.currentShaderName = 'Fragment';
+        this.defaultShaderName = 'Fragment';
     }
 
     setShaderTitle(name) {
-        this.currentShaderName = name || 'Fragment';
+        this.currentShaderName = name || this.defaultShaderName || 'Fragment';
         const h2 = document.getElementById('editorTitle');
         if (h2) h2.textContent = this.currentShaderName;
         const pathName = document.querySelector('.path-mark .path-name');
-        if (pathName) pathName.textContent = (name || 'editor').toLowerCase().replace(/\s+/g, '-');
+        if (pathName) {
+            const slug = (name || 'editor').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            pathName.textContent = slug;
+        }
     }
 
     async init() {
