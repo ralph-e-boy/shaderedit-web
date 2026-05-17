@@ -203,46 +203,21 @@ body {
     flex: 1;
     position: relative;
     overflow: hidden;
+    min-height: 0;
 }
 
-#highlighted {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 20px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #d4d4d4;
-    white-space: pre;
-    overflow: auto;
-    pointer-events: none;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-#codeEditor {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 20px;
-    background: transparent;
-    color: transparent;
-    caret-color: #fff;
-    border: none;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: none;
+#codeContainer .cm-editor {
+    height: 100%;
     outline: none;
-    white-space: pre;
-    overflow: auto;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+}
+
+#codeContainer .cm-editor.cm-focused {
+    outline: none;
+}
+
+#codeContainer .cm-scroller {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    line-height: 1.6;
 }
 
 #editorFooter {

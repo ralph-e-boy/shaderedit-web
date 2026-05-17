@@ -1,86 +1,98 @@
-// Shader editor with syntax highlighting and vim support
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection } from '@codemirror/view';
+import { EditorState, Compartment } from '@codemirror/state';
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, indentOnInput, foldGutter, foldKeymap } from '@codemirror/language';
+import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
+import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { vim } from '@replit/codemirror-vim';
+import { glslLanguage } from './glsl-mode.js';
+
+const COMPILE_DEBOUNCE_MS = 300;
+
 export class ShaderEditor {
     constructor(renderer, settings) {
         this.renderer = renderer;
         this.settings = settings;
-        this.textarea = document.getElementById('codeEditor');
-        this.highlighted = document.getElementById('highlighted');
+        this.container = document.getElementById('codeContainer');
         this.errorDisplay = document.getElementById('errorMsg');
         this.currentShader = '';
         this.compileTimeout = null;
-        this.vimMode = null;
+        this.view = null;
+        this.vimCompartment = new Compartment();
+        this.fontSizeCompartment = new Compartment();
     }
 
     init(defaultShader) {
         this.currentShader = defaultShader;
-        this.textarea.value = defaultShader;
-        this.updateHighlighting();
+
+        const vimEnabled = this.settings.get('vimMode', true);
+        const fontSize = this.settings.get('fontSize', 14);
+
+        const state = EditorState.create({
+            doc: defaultShader,
+            extensions: [
+                this.vimCompartment.of(vimEnabled ? vim() : []),
+                lineNumbers(),
+                highlightActiveLineGutter(),
+                history(),
+                foldGutter(),
+                drawSelection(),
+                EditorState.allowMultipleSelections.of(true),
+                indentOnInput(),
+                syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+                bracketMatching(),
+                closeBrackets(),
+                autocompletion(),
+                highlightActiveLine(),
+                highlightSelectionMatches(),
+                glslLanguage,
+                oneDark,
+                this.fontSizeCompartment.of(EditorView.theme({
+                    '&': { fontSize: `${fontSize}px` },
+                    '.cm-scroller': { fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace" },
+                })),
+                keymap.of([
+                    ...closeBracketsKeymap,
+                    ...defaultKeymap,
+                    ...searchKeymap,
+                    ...historyKeymap,
+                    ...foldKeymap,
+                    ...completionKeymap,
+                    indentWithTab,
+                ]),
+                EditorView.updateListener.of((update) => {
+                    if (update.docChanged) {
+                        this.scheduleCompile();
+                    }
+                    this.refreshVimIndicator();
+                }),
+            ],
+        });
+
+        this.view = new EditorView({
+            state,
+            parent: this.container,
+        });
+
         this.compileShader();
-
-        // Setup event listeners
-        this.setupEventListeners();
-
-        // Initialize vim mode if enabled
-        if (this.settings.get('vimMode', true)) {
-            this.enableVimMode();
-        }
-
-        // Show initial vim indicator
         this.updateVimIndicator();
     }
 
-    setupEventListeners() {
-        // Auto-compile on input with debouncing
-        this.textarea.addEventListener('input', (e) => {
-            this.updateHighlighting();
-            this.scheduleCompile();
-        });
-
-        // Sync scrolling
-        this.textarea.addEventListener('scroll', () => {
-            this.highlighted.scrollTop = this.textarea.scrollTop;
-            this.highlighted.scrollLeft = this.textarea.scrollLeft;
-        });
-
-        // Handle tab key properly
-        this.textarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const start = this.textarea.selectionStart;
-                const end = this.textarea.selectionEnd;
-                const value = this.textarea.value;
-
-                if (e.shiftKey) {
-                    // Unindent
-                    const lineStart = value.lastIndexOf('\\n', start - 1) + 1;
-                    if (value.substring(lineStart, lineStart + 4) === '    ') {
-                        this.textarea.value = value.substring(0, lineStart) + value.substring(lineStart + 4);
-                        this.textarea.selectionStart = this.textarea.selectionEnd = start - 4;
-                    }
-                } else {
-                    // Indent
-                    this.textarea.value = value.substring(0, start) + '    ' + value.substring(end);
-                    this.textarea.selectionStart = this.textarea.selectionEnd = start + 4;
-                }
-                this.updateHighlighting();
-                this.scheduleCompile();
-            }
-        });
+    isFocused() {
+        return this.view && this.view.hasFocus;
     }
 
     scheduleCompile() {
         if (this.compileTimeout) {
             clearTimeout(this.compileTimeout);
         }
-        this.compileTimeout = setTimeout(() => {
-            this.compileShader();
-        }, 300); // 300ms debounce
+        this.compileTimeout = setTimeout(() => this.compileShader(), COMPILE_DEBOUNCE_MS);
     }
 
     compileShader() {
-        const code = this.textarea.value;
+        const code = this.getCode();
         const result = this.renderer.setFragmentShader(code);
-
         if (result.success) {
             this.hideError();
             this.currentShader = code;
@@ -99,110 +111,26 @@ export class ShaderEditor {
         this.errorDisplay.textContent = '';
     }
 
-    updateHighlighting() {
-        this.highlighted.innerHTML = this.highlightGLSL(this.textarea.value);
-    }
-
-    highlightGLSL(code) {
-        const keywords = /\\b(void|float|int|bool|vec2|vec3|vec4|mat2|mat3|mat4|sampler2D|if|else|for|while|return|break|continue|discard|attribute|uniform|varying|const|in|out|inout|precision|lowp|mediump|highp|struct|main)\\b/g;
-        const types = /\\b(gl_Position|gl_FragCoord|gl_FragColor|gl_PointSize)\\b/g;
-        const functions = /\\b(sin|cos|tan|asin|acos|atan|pow|exp|log|sqrt|abs|sign|floor|ceil|fract|mod|min|max|clamp|mix|step|smoothstep|length|distance|dot|cross|normalize|reflect|refract|texture2D)\\b/g;
-        const numbers = /\\b(\\d+\\.?\\d*|\\.\\d+)\\b/g;
-        const comments = /(\/\/[^\\n]*|\/\\*[\\s\\S]*?\\*\/)/g;
-        const preprocessor = /^(#.*$)/gm;
-
-        return code
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(comments, '<span style="color: #6A9955">$1</span>')
-            .replace(preprocessor, '<span style="color: #C586C0">$1</span>')
-            .replace(keywords, '<span style="color: #569CD6">$1</span>')
-            .replace(types, '<span style="color: #4EC9B0">$1</span>')
-            .replace(functions, '<span style="color: #DCDCAA">$1</span>')
-            .replace(numbers, '<span style="color: #B5CEA8">$1</span>');
-    }
-
     enableVimMode() {
-        // Basic vim mode implementation
-        // This is a simplified version - we'll enhance it later
-        this.vimMode = {
-            mode: 'insert', // 'normal', 'insert', 'visual'
-            keyBuffer: ''
-        };
-
-        this.textarea.addEventListener('keydown', (e) => {
-            if (this.settings.get('vimMode', true)) {
-                this.handleVimKey(e);
-            }
+        this.view.dispatch({
+            effects: this.vimCompartment.reconfigure(vim()),
         });
-    }
-
-    handleVimKey(e) {
-        if (!this.vimMode) return;
-
-        // ESC always goes to normal mode - prevent it from closing editor
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            e.stopPropagation();
-            this.vimMode.mode = 'normal';
-            this.vimMode.keyBuffer = '';
-            this.updateVimIndicator();
-            return;
-        }
-
-        // In insert mode, only handle ESC
-        if (this.vimMode.mode === 'insert') {
-            return;
-        }
-
-        // Normal mode key handling
-        if (this.vimMode.mode === 'normal') {
-            e.preventDefault();
-            this.handleNormalModeKey(e.key);
-        }
-    }
-
-    handleNormalModeKey(key) {
-        const textarea = this.textarea;
-        const pos = textarea.selectionStart;
-        const lines = textarea.value.split('\\n');
-        const currentLineIndex = textarea.value.substring(0, pos).split('\\n').length - 1;
-        const currentLine = lines[currentLineIndex];
-        const posInLine = pos - textarea.value.split('\\n').slice(0, currentLineIndex).join('\\n').length - (currentLineIndex > 0 ? 1 : 0);
-
-        switch (key) {
-            case 'i':
-                this.vimMode.mode = 'insert';
-                break;
-            case 'h':
-                if (pos > 0) textarea.selectionStart = textarea.selectionEnd = pos - 1;
-                break;
-            case 'l':
-                if (pos < textarea.value.length) textarea.selectionStart = textarea.selectionEnd = pos + 1;
-                break;
-            case 'j':
-                if (currentLineIndex < lines.length - 1) {
-                    const nextLineStart = textarea.value.split('\\n').slice(0, currentLineIndex + 1).join('\\n').length + 1;
-                    const nextLine = lines[currentLineIndex + 1];
-                    const newPos = nextLineStart + Math.min(posInLine, nextLine.length);
-                    textarea.selectionStart = textarea.selectionEnd = newPos;
-                }
-                break;
-            case 'k':
-                if (currentLineIndex > 0) {
-                    const prevLineStart = textarea.value.split('\\n').slice(0, currentLineIndex - 1).join('\\n').length + (currentLineIndex > 1 ? 1 : 0);
-                    const prevLine = lines[currentLineIndex - 1];
-                    const newPos = prevLineStart + Math.min(posInLine, prevLine.length);
-                    textarea.selectionStart = textarea.selectionEnd = newPos;
-                }
-                break;
-        }
-
         this.updateVimIndicator();
     }
 
+    disableVimMode() {
+        this.view.dispatch({
+            effects: this.vimCompartment.reconfigure([]),
+        });
+        this.updateVimIndicator();
+    }
+
+    setVimMode(enabled) {
+        if (enabled) this.enableVimMode();
+        else this.disableVimMode();
+    }
+
     updateVimIndicator() {
-        // Create or update vim indicator
         let indicator = document.getElementById('vimIndicator');
         if (!indicator) {
             indicator = document.createElement('div');
@@ -210,44 +138,75 @@ export class ShaderEditor {
             indicator.className = 'vim-indicator';
             document.body.appendChild(indicator);
         }
+        this._vimIndicator = indicator;
+        this.refreshVimIndicator();
+    }
 
-        if (this.vimMode && this.settings.get('vimMode', true)) {
-            indicator.textContent = `VIM: ${this.vimMode.mode.toUpperCase()}`;
-            indicator.style.display = 'block';
-        } else {
+    refreshVimIndicator() {
+        const indicator = this._vimIndicator || document.getElementById('vimIndicator');
+        if (!indicator) return;
+
+        const vimEnabled = this.settings.get('vimMode', true);
+        if (!vimEnabled) {
             indicator.style.display = 'none';
+            return;
         }
+
+        const cm = this.view && this.view.cm;
+        const vimState = cm && cm.state && cm.state.vim;
+        let mode = 'NORMAL';
+        if (vimState) {
+            if (vimState.insertMode) mode = 'INSERT';
+            else if (vimState.visualMode) mode = 'VISUAL';
+        }
+        const text = `VIM: ${mode}`;
+        if (indicator.textContent !== text) indicator.textContent = text;
+        indicator.style.display = 'block';
+    }
+
+    setFontSize(px) {
+        this.view.dispatch({
+            effects: this.fontSizeCompartment.reconfigure(EditorView.theme({
+                '&': { fontSize: `${px}px` },
+                '.cm-scroller': { fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace" },
+            })),
+        });
     }
 
     getCode() {
-        return this.textarea.value;
+        return this.view.state.doc.toString();
     }
 
     setCode(code) {
-        this.textarea.value = code;
-        this.updateHighlighting();
+        this.view.dispatch({
+            changes: { from: 0, to: this.view.state.doc.length, insert: code },
+        });
         this.compileShader();
     }
 
+    focus() {
+        this.view.focus();
+    }
+
     selectAll() {
-        this.textarea.select();
+        const len = this.view.state.doc.length;
+        this.view.dispatch({ selection: { anchor: 0, head: len } });
+        this.focus();
     }
 
     copy() {
-        navigator.clipboard.writeText(this.textarea.value);
+        const sel = this.view.state.selection.main;
+        const text = sel.empty ? this.getCode() : this.view.state.sliceDoc(sel.from, sel.to);
+        navigator.clipboard.writeText(text);
     }
 
     paste() {
-        navigator.clipboard.readText().then(text => {
-            const start = this.textarea.selectionStart;
-            const end = this.textarea.selectionEnd;
-            const value = this.textarea.value;
-
-            this.textarea.value = value.substring(0, start) + text + value.substring(end);
-            this.textarea.selectionStart = this.textarea.selectionEnd = start + text.length;
-
-            this.updateHighlighting();
-            this.scheduleCompile();
+        navigator.clipboard.readText().then((text) => {
+            const sel = this.view.state.selection.main;
+            this.view.dispatch({
+                changes: { from: sel.from, to: sel.to, insert: text },
+                selection: { anchor: sel.from + text.length },
+            });
         });
     }
 }

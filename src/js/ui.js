@@ -481,6 +481,9 @@ export class UIManager {
             } else if (document.getElementById('settingsPanel').classList.contains('show')) {
                 this.hideSettings();
             } else if (this.isEditorOpen) {
+                if (this.settings.get('vimMode', true) && this.editor.isFocused()) {
+                    return;
+                }
                 this.closeEditor();
             } else if (document.fullscreenElement) {
                 document.exitFullscreen();
@@ -609,22 +612,12 @@ export class UIManager {
 
         switch (key) {
             case 'vimMode':
-                if (value) {
-                    this.editor.enableVimMode();
-                }
+                this.editor.setVimMode(value);
                 break;
             case 'fontSize':
-                this.updateFontSize(value);
+                this.editor.setFontSize(value);
                 break;
         }
-    }
-
-    updateFontSize(size) {
-        const editor = document.getElementById('codeEditor');
-        const highlighted = document.getElementById('highlighted');
-
-        if (editor) editor.style.fontSize = size + 'px';
-        if (highlighted) highlighted.style.fontSize = size + 'px';
     }
 
     updateUI() {

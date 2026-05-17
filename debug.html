@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CM6 debug</title>
+<style>
+  body { font: 13px monospace; background: #1e1e1e; color: #d4d4d4; margin: 20px; }
+  #log { white-space: pre-wrap; background: #111; padding: 12px; border-radius: 6px; min-height: 200px; }
+  #mount, #mount2 { margin-top: 12px; border: 1px solid #555; height: 220px; }
+  h3 { margin: 16px 0 4px; color: #8a8; }
+  .ok { color: #00ff88; }
+  .err { color: #ff5577; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "@codemirror/state": "https://esm.sh/*@codemirror/state@6.4.1",
+    "@codemirror/view": "https://esm.sh/*@codemirror/view@6.26.3",
+    "@codemirror/language": "https://esm.sh/*@codemirror/language@6.10.1",
+    "@codemirror/commands": "https://esm.sh/*@codemirror/commands@6.5.0",
+    "@codemirror/search": "https://esm.sh/*@codemirror/search@6.5.6",
+    "@codemirror/autocomplete": "https://esm.sh/*@codemirror/autocomplete@6.16.0",
+    "@codemirror/lint": "https://esm.sh/*@codemirror/lint@6.5.0",
+    "@codemirror/theme-one-dark": "https://esm.sh/*@codemirror/theme-one-dark@6.1.2",
+    "@codemirror/legacy-modes/mode/clike": "https://esm.sh/*@codemirror/legacy-modes@6.4.0/mode/clike",
+    "@lezer/common": "https://esm.sh/*@lezer/common@1.2.1",
+    "@lezer/highlight": "https://esm.sh/*@lezer/highlight@1.2.0",
+    "@lezer/lr": "https://esm.sh/*@lezer/lr@1.4.0",
+    "style-mod": "https://esm.sh/style-mod@4.1.2",
+    "w3c-keyname": "https://esm.sh/w3c-keyname@2.2.8",
+    "crelt": "https://esm.sh/crelt@1.0.6",
+    "@replit/codemirror-vim": "https://esm.sh/*@replit/codemirror-vim@6.2.1",
+    "codemirror": "https://esm.sh/*codemirror@6.0.1"
+  }
+}
+</script>
+</head>
+<body>
+<h2>CodeMirror diagnostic</h2>
+<div id="log"></div>
+<h3>A: my glsl-mode.js</h3>
+<div id="mount"></div>
+<h3>B: legacy clike shader mode (for comparison)</h3>
+<div id="mount2"></div>
+<h3>C: codemirror basicSetup + legacy shader (canonical path)</h3>
+<div id="mount3"></div>
+<h3>D: only defaultHighlightStyle, no oneDark</h3>
+<div id="mount4"></div>
+<script type="module">
+const log = document.getElementById('log');
+const ok = (s) => { log.insertAdjacentHTML('beforeend', `<span class="ok">[ok]</span> ${s}\n`); };
+const err = (s) => { log.insertAdjacentHTML('beforeend', `<span class="err">[ERR]</span> ${s}\n`); };
+
+window.addEventListener('error', (e) => err(`${e.message} @ ${e.filename}:${e.lineno}`));
+window.addEventListener('unhandledrejection', (e) => err(`unhandled rejection: ${e.reason}`));
+
+try {
+  ok('start');
+  const { EditorState } = await import('@codemirror/state'); ok('imported @codemirror/state');
+  const { EditorView, keymap, lineNumbers } = await import('@codemirror/view'); ok('imported @codemirror/view');
+  const { syntaxHighlighting, defaultHighlightStyle } = await import('@codemirror/language'); ok('imported @codemirror/language');
+  const { defaultKeymap } = await import('@codemirror/commands'); ok('imported @codemirror/commands');
+  const { oneDark } = await import('@codemirror/theme-one-dark'); ok('imported @codemirror/theme-one-dark');
+  const { vim } = await import('@replit/codemirror-vim'); ok('imported @replit/codemirror-vim');
+  const { glslLanguage } = await import('./src/js/glsl-mode.js'); ok('imported ./src/js/glsl-mode.js');
+
+  const state = EditorState.create({
+    doc: 'void main() {\n  vec3 c = vec3(sin(time));\n  gl_FragColor = vec4(c, 1.0);\n}\n',
+    extensions: [
+      lineNumbers(),
+      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+      glslLanguage,
+      oneDark,
+      keymap.of(defaultKeymap),
+    ],
+  });
+  ok('created EditorState');
+  const view = new EditorView({ state, parent: document.getElementById('mount') });
+  ok('mounted EditorView — should be visible below');
+  window._view = view;
+
+  // Wait + force parse before inspecting DOM
+  const { syntaxTree, forceParsing } = await import('@codemirror/language');
+  forceParsing(view, view.state.doc.length, 5000);
+  await new Promise(r => setTimeout(r, 500));
+  const tree = syntaxTree(view.state);
+  let nodeNames = new Set();
+  tree.iterate({ enter: (n) => { nodeNames.add(n.name); } });
+  ok(`A tree node names: ${JSON.stringify([...nodeNames])}`);
+  const tokSpans = view.dom.querySelectorAll('.cm-line span');
+  ok(`token spans found: ${tokSpans.length}`);
+  const classes = new Set();
+  tokSpans.forEach(s => { s.className && classes.add(s.className); });
+  ok(`unique span classes: ${JSON.stringify([...classes])}`);
+
+  // Sample: get the first identifier and report what color it computed to
+  const firstSpan = tokSpans[0];
+  if (firstSpan) {
+    const cs = getComputedStyle(firstSpan);
+    ok(`first span text: ${JSON.stringify(firstSpan.textContent)} color: ${cs.color}`);
+  }
+
+  // --- B: legacy mode ---
+  const { StreamLanguage } = await import('@codemirror/language');
+  const { shader: legacyShader } = await import('@codemirror/legacy-modes/mode/clike');
+  const legacyLang = StreamLanguage.define(legacyShader);
+  const state2 = EditorState.create({
+    doc: state.doc.toString(),
+    extensions: [
+      lineNumbers(),
+      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+      legacyLang,
+      oneDark,
+      keymap.of(defaultKeymap),
+    ],
+  });
+  const view2 = new EditorView({ state: state2, parent: document.getElementById('mount2') });
+  ok('mounted legacy comparison view');
+  await new Promise(r => setTimeout(r, 200));
+  const tokSpans2 = view2.dom.querySelectorAll('.cm-line span');
+  const classes2 = new Set();
+  tokSpans2.forEach(s => { s.className && classes2.add(s.className); });
+  ok(`B unique span classes: ${JSON.stringify([...classes2])}`);
+
+  // --- C: canonical basicSetup ---
+  const { basicSetup } = await import('codemirror');
+  const state3 = EditorState.create({
+    doc: state.doc.toString(),
+    extensions: [basicSetup, legacyLang, oneDark],
+  });
+  const view3 = new EditorView({ state: state3, parent: document.getElementById('mount3') });
+  await new Promise(r => setTimeout(r, 200));
+  const cls3 = new Set();
+  view3.dom.querySelectorAll('.cm-line span').forEach(s => s.className && cls3.add(s.className));
+  ok(`C unique span classes: ${JSON.stringify([...cls3])}`);
+
+  // --- D: defaultHighlightStyle only, no oneDark ---
+  const state4 = EditorState.create({
+    doc: state.doc.toString(),
+    extensions: [
+      lineNumbers(),
+      syntaxHighlighting(defaultHighlightStyle),
+      legacyLang,
+      keymap.of(defaultKeymap),
+    ],
+  });
+  const view4 = new EditorView({ state: state4, parent: document.getElementById('mount4') });
+  await new Promise(r => setTimeout(r, 200));
+  const cls4 = new Set();
+  view4.dom.querySelectorAll('.cm-line span').forEach(s => s.className && cls4.add(s.className));
+  ok(`D unique span classes: ${JSON.stringify([...cls4])}`);
+
+  // Identity check: do tags from theme-one-dark match tags from @lezer/highlight?
+  const lezerHL = await import('@lezer/highlight');
+  const themeMod = await import('@codemirror/theme-one-dark');
+  ok(`oneDarkHighlightStyle exported: ${Object.keys(themeMod).join(',')}`);
+  ok(`tags.keyword identity: ${typeof lezerHL.tags.keyword === 'object' ? 'object' : typeof lezerHL.tags.keyword}`);
+
+  // Direct highlightTree test
+  const { highlightTree, tagHighlighter } = lezerHL;
+  const tags = lezerHL.tags;
+  const myHL = tagHighlighter([
+    { tag: tags.keyword, class: 'HL-keyword' },
+    { tag: tags.typeName, class: 'HL-type' },
+    { tag: tags.variableName, class: 'HL-var' },
+    { tag: tags.number, class: 'HL-num' },
+    { tag: tags.standard(tags.variableName), class: 'HL-builtin' },
+    { tag: tags.atom, class: 'HL-atom' },
+  ]);
+  const code = view.state.doc.toString();
+  const tree2 = syntaxTree(view.state);
+  let emitted = [];
+  highlightTree(tree2, myHL, (from, to, cls) => {
+    emitted.push(`${cls}:${JSON.stringify(code.slice(from, to))}`);
+  });
+  ok(`highlightTree emitted ${emitted.length} classes:`);
+  emitted.slice(0, 20).forEach(e => log.insertAdjacentHTML('beforeend', `  ${e}\n`));
+
+  // Check the parser's NodeType highlight props
+  const { NodeProp } = await import('@lezer/common');
+  const sampleTypes = {};
+  tree2.iterate({ enter: (n) => {
+    if (!sampleTypes[n.name]) {
+      sampleTypes[n.name] = n.type.prop(NodeProp.skipped) === undefined ? 'no-skipped' : 'skipped';
+    }
+  }});
+  ok(`sample types: ${JSON.stringify(sampleTypes)}`);
+} catch (e) {
+  err(`caught: ${e.stack || e.message || e}`);
+}
+</script>
+</body>
+</html>

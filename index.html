@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Epic Shader Editor - The Ultimate GLSL Playground 🔥</title>
     <link rel="stylesheet" href="src/css/styles.css">
+    <script type="importmap">
+    {
+      "imports": {
+        "codemirror": "https://esm.sh/*codemirror@6.0.1",
+        "@codemirror/state": "https://esm.sh/*@codemirror/state@6.4.1",
+        "@codemirror/view": "https://esm.sh/*@codemirror/view@6.26.3",
+        "@codemirror/language": "https://esm.sh/*@codemirror/language@6.10.1",
+        "@codemirror/commands": "https://esm.sh/*@codemirror/commands@6.5.0",
+        "@codemirror/search": "https://esm.sh/*@codemirror/search@6.5.6",
+        "@codemirror/autocomplete": "https://esm.sh/*@codemirror/autocomplete@6.16.0",
+        "@codemirror/lint": "https://esm.sh/*@codemirror/lint@6.5.0",
+        "@codemirror/legacy-modes/mode/clike": "https://esm.sh/*@codemirror/legacy-modes@6.4.0/mode/clike",
+        "@codemirror/theme-one-dark": "https://esm.sh/*@codemirror/theme-one-dark@6.1.2",
+        "@lezer/common": "https://esm.sh/*@lezer/common@1.2.1",
+        "@lezer/highlight": "https://esm.sh/*@lezer/highlight@1.2.0",
+        "@lezer/lr": "https://esm.sh/*@lezer/lr@1.4.0",
+        "style-mod": "https://esm.sh/style-mod@4.1.2",
+        "w3c-keyname": "https://esm.sh/w3c-keyname@2.2.8",
+        "crelt": "https://esm.sh/crelt@1.0.6",
+        "@replit/codemirror-vim": "https://esm.sh/*@replit/codemirror-vim@6.2.1"
+      }
+    }
+    </script>
 </head>
 <body class="dark-theme">
     <canvas id="canvas"></canvas>
@@ -17,10 +40,7 @@
                 <button id="applyBtn">Apply & Close</button>
             </div>
             <div id="errorMsg"></div>
-            <div id="codeContainer">
-                <div id="highlighted"></div>
-                <textarea id="codeEditor" spellcheck="false"></textarea>
-            </div>
+            <div id="codeContainer"></div>
             <div id="editorFooter">
                 <strong>🔥 Epic Mode:</strong> Uniforms available:
                 <span style="color: #4EC9B0">time</span> (float),
