@@ -16,6 +16,63 @@ export class ShaderLibrary {
     async loadPresets() {
         // Define built-in shader presets
         this.presets = {
+            // ---------- BASICS ----------
+            '01 · UV Coordinates': {
+                file: './src/shaders/basics-uv.glsl',
+                category: 'basics',
+                description: 'Hello world: visualize the pixel\'s position as color',
+                uniforms: ['resolution']
+            },
+            '02 · Time': {
+                file: './src/shaders/basics-time.glsl',
+                category: 'basics',
+                description: 'Animating with the time uniform and sin()',
+                uniforms: ['time', 'resolution']
+            },
+            '03 · Mouse': {
+                file: './src/shaders/basics-mouse.glsl',
+                category: 'basics',
+                description: 'Soft glow that follows the cursor; intro to distance fields',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
+            '04 · Circle SDF': {
+                file: './src/shaders/basics-circle.glsl',
+                category: 'basics',
+                description: 'Signed distance field for a circle, with anti-aliasing',
+                uniforms: ['time', 'resolution']
+            },
+            '05 · SDF Shapes': {
+                file: './src/shaders/basics-shapes.glsl',
+                category: 'basics',
+                description: 'Box, rounded box, triangle, and circle composed via min()',
+                uniforms: ['time', 'resolution']
+            },
+            '06 · Polar Coordinates': {
+                file: './src/shaders/basics-polar.glsl',
+                category: 'basics',
+                description: 'Rays and rings using (radius, angle) instead of (x, y)',
+                uniforms: ['time', 'resolution']
+            },
+            '07 · Repeating Grid': {
+                file: './src/shaders/basics-grid.glsl',
+                category: 'basics',
+                description: 'fract() + hash() to tile a unique-per-cell pattern infinitely',
+                uniforms: ['time', 'resolution']
+            },
+            // ---------- NOISE ----------
+            'Value Noise': {
+                file: './src/shaders/noise-value.glsl',
+                category: 'noise',
+                description: 'The simplest procedural noise: random per grid cell, smoothly interpolated',
+                uniforms: ['time', 'resolution']
+            },
+            'Fractal Brownian Motion': {
+                file: './src/shaders/noise-fbm.glsl',
+                category: 'noise',
+                description: 'Layered noise octaves with domain warping — the texture of clouds & terrain',
+                uniforms: ['time', 'resolution']
+            },
+            // ---------- FRACTALS ----------
             'Mandelbrot Fractal': {
                 file: './src/shaders/fractal-mandelbrot.glsl',
                 category: 'fractals',
@@ -55,7 +112,7 @@ export class ShaderLibrary {
             'Aurora Borealis': {
                 file: './src/shaders/nature-aurora.glsl',
                 category: 'nature',
-                description: 'Northern lights with layered curtains and starfield',
+                description: 'Vertical curtains of light over a dark horizon, properly green-to-magenta',
                 uniforms: ['time', 'resolution', 'mouse']
             },
             'Clouds': {
@@ -236,7 +293,7 @@ export class ShaderLibrary {
     }
 
     getCategoryOrder() {
-        return ['fractals', 'nature', 'geometric', 'trippy', 'custom'];
+        return ['basics', 'noise', 'fractals', 'nature', 'geometric', 'trippy', 'custom'];
     }
 
     searchShaders(query) {
@@ -343,6 +400,8 @@ export class ShaderLibrary {
     getCategoryDisplayName(category) {
         const displayNames = {
             'all': 'All Shaders',
+            'basics': 'Basics — start here',
+            'noise': 'Noise',
             'fractals': 'Fractals',
             'nature': 'Nature',
             'geometric': 'Geometric',
@@ -354,6 +413,8 @@ export class ShaderLibrary {
 
     getCategoryLabel(category) {
         const labels = {
+            'basics': 'Basics',
+            'noise': 'Noise',
             'fractals': 'Fractals',
             'nature': 'Nature',
             'geometric': 'Geometric',
