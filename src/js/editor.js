@@ -1,12 +1,126 @@
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection } from '@codemirror/view';
 import { EditorState, Compartment } from '@codemirror/state';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, indentOnInput, foldGutter, foldKeymap } from '@codemirror/language';
+import { syntaxHighlighting, HighlightStyle, bracketMatching, indentOnInput, foldGutter, foldKeymap } from '@codemirror/language';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { tags as t } from '@lezer/highlight';
 import { vim } from '@replit/codemirror-vim';
 import { glslLanguage } from './glsl-mode.js';
+
+const PAPER = '#e8dcc1';
+const PAPER_DIM = '#a89779';
+const PAPER_MUTED = '#74684f';
+const INK = '#0a0907';
+const RULE = '#3a3122';
+const VERMILLION = '#d9532a';
+const VERMILLION_DIM = '#a8401f';
+const GOLD = '#c79b3f';
+const WINE = '#5a1f1f';
+
+const almanacTheme = EditorView.theme({
+    '&': {
+        color: PAPER,
+        backgroundColor: 'transparent',
+        height: '100%',
+    },
+    '.cm-content': {
+        caretColor: VERMILLION,
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontFeatureSettings: '"calt", "ss01", "ss02", "tnum"',
+        padding: '20px 8px',
+    },
+    '.cm-cursor, .cm-dropCursor': {
+        borderLeftColor: VERMILLION,
+        borderLeftWidth: '1.5px',
+    },
+    '&.cm-focused .cm-cursor': { borderLeftColor: VERMILLION },
+    '.cm-line': { padding: '0 4px' },
+    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
+        backgroundColor: 'rgba(217, 83, 42, 0.22)',
+    },
+    '.cm-activeLine': { backgroundColor: 'rgba(232, 220, 193, 0.025)' },
+    '.cm-activeLineGutter': {
+        backgroundColor: 'transparent',
+        color: VERMILLION,
+    },
+    '.cm-gutters': {
+        backgroundColor: 'transparent',
+        color: PAPER_MUTED,
+        border: 'none',
+        borderRight: `1px solid ${RULE}`,
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontSize: '11px',
+        fontWeight: '300',
+    },
+    '.cm-lineNumbers .cm-gutterElement': {
+        padding: '0 12px 0 18px',
+        minWidth: '36px',
+        fontVariantNumeric: 'tabular-nums oldstyle-nums',
+        letterSpacing: '0.02em',
+    },
+    '.cm-foldGutter .cm-gutterElement': { color: PAPER_MUTED, padding: '0 4px' },
+    '.cm-scroller': {
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        lineHeight: '1.6',
+    },
+    '.cm-tooltip': {
+        backgroundColor: '#16120c',
+        border: `1px solid ${RULE}`,
+        color: PAPER,
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+    },
+    '.cm-tooltip.cm-tooltip-autocomplete > ul > li': {
+        padding: '4px 10px',
+    },
+    '.cm-tooltip-autocomplete ul li[aria-selected]': {
+        backgroundColor: 'rgba(217, 83, 42, 0.18)',
+        color: PAPER,
+    },
+    '.cm-matchingBracket, &.cm-focused .cm-matchingBracket': {
+        backgroundColor: 'transparent',
+        outline: `1px solid ${VERMILLION_DIM}`,
+        color: PAPER,
+    },
+    '.cm-searchMatch': { backgroundColor: 'rgba(199, 155, 63, 0.25)' },
+    '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: 'rgba(217, 83, 42, 0.35)' },
+    '.cm-panels': { backgroundColor: '#15110a', color: PAPER, borderTop: `1px solid ${RULE}` },
+    '.cm-panel input': {
+        backgroundColor: 'transparent',
+        color: PAPER,
+        border: `1px solid ${RULE}`,
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+    },
+}, { dark: true });
+
+const almanacHighlight = HighlightStyle.define([
+    { tag: t.comment, color: PAPER_MUTED, fontStyle: 'italic' },
+    { tag: t.lineComment, color: PAPER_MUTED, fontStyle: 'italic' },
+    { tag: t.blockComment, color: PAPER_MUTED, fontStyle: 'italic' },
+    { tag: t.meta, color: VERMILLION, fontWeight: '500' },
+    { tag: t.processingInstruction, color: VERMILLION, fontWeight: '500' },
+    { tag: t.keyword, color: PAPER, fontWeight: '600' },
+    { tag: t.controlKeyword, color: PAPER, fontWeight: '600' },
+    { tag: t.operatorKeyword, color: PAPER, fontWeight: '600' },
+    { tag: t.modifier, color: PAPER, fontWeight: '600' },
+    { tag: t.typeName, color: PAPER, fontStyle: 'normal', fontWeight: '500', textDecoration: 'none' },
+    { tag: t.standard(t.variableName), color: PAPER_DIM, fontStyle: 'italic' },
+    { tag: t.function(t.variableName), color: PAPER, fontWeight: '400' },
+    { tag: t.atom, color: GOLD, fontWeight: '500' },
+    { tag: t.bool, color: GOLD, fontWeight: '500' },
+    { tag: t.number, color: VERMILLION_DIM },
+    { tag: t.integer, color: VERMILLION_DIM },
+    { tag: t.float, color: VERMILLION_DIM },
+    { tag: t.string, color: GOLD },
+    { tag: t.operator, color: PAPER_DIM },
+    { tag: t.punctuation, color: PAPER_DIM },
+    { tag: t.bracket, color: PAPER_DIM },
+    { tag: t.variableName, color: PAPER },
+    { tag: t.propertyName, color: PAPER },
+    { tag: t.invalid, color: VERMILLION, textDecoration: 'underline wavy' },
+]);
+
+const almanacExtensions = [almanacTheme, syntaxHighlighting(almanacHighlight)];
 
 const COMPILE_DEBOUNCE_MS = 300;
 
@@ -40,19 +154,33 @@ export class ShaderEditor {
                 drawSelection(),
                 EditorState.allowMultipleSelections.of(true),
                 indentOnInput(),
-                syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
                 bracketMatching(),
                 closeBrackets(),
                 autocompletion(),
                 highlightActiveLine(),
                 highlightSelectionMatches(),
                 glslLanguage,
-                oneDark,
+                almanacExtensions,
                 this.fontSizeCompartment.of(EditorView.theme({
                     '&': { fontSize: `${fontSize}px` },
-                    '.cm-scroller': { fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace" },
                 })),
                 keymap.of([
+                    {
+                        key: 'Mod-s',
+                        preventDefault: true,
+                        run: () => {
+                            document.dispatchEvent(new CustomEvent('shader-save-requested'));
+                            return true;
+                        },
+                    },
+                    {
+                        key: 'Mod-Shift-Enter',
+                        preventDefault: true,
+                        run: () => {
+                            document.dispatchEvent(new CustomEvent('shader-commit-requested'));
+                            return true;
+                        },
+                    },
                     ...closeBracketsKeymap,
                     ...defaultKeymap,
                     ...searchKeymap,
@@ -168,7 +296,6 @@ export class ShaderEditor {
         this.view.dispatch({
             effects: this.fontSizeCompartment.reconfigure(EditorView.theme({
                 '&': { fontSize: `${px}px` },
-                '.cm-scroller': { fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace" },
             })),
         });
     }

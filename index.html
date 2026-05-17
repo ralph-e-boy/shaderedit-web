@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Epic Shader Editor - The Ultimate GLSL Playground 🔥</title>
+    <title>se.fragment — GLSL shader editor</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,200..800;1,200..800&display=swap">
+
     <link rel="stylesheet" href="src/css/styles.css">
+
     <script type="importmap">
     {
       "imports": {
@@ -29,27 +35,48 @@
     }
     </script>
 </head>
-<body class="dark-theme">
+<body>
     <canvas id="canvas"></canvas>
-    <button id="editBtn">Edit Shader</button>
 
-    <div id="editorOverlay">
+    <div class="grain" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <div id="editorOverlay" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
         <div id="editorPanel">
+            <span class="bracket br-tl" aria-hidden="true"></span>
+            <span class="bracket br-tr" aria-hidden="true"></span>
+            <span class="bracket br-bl" aria-hidden="true"></span>
+            <span class="bracket br-br" aria-hidden="true"></span>
+
             <div id="editorHeader">
-                <h2>Fragment Shader Editor</h2>
-                <button id="applyBtn">Apply & Close</button>
+                <div class="path-mark">
+                    <span class="path-prefix">se</span>
+                    <span class="path-slash">/</span>
+                    <span class="path-name">editor</span>
+                    <span class="path-ext">.frag</span>
+                    <span class="path-status">● live</span>
+                </div>
+                <h2 id="editorTitle">Fragment</h2>
+                <button id="applyBtn" type="button"><span class="ab-stamp">commit</span><span class="ab-meta">⇧⌘↩</span></button>
             </div>
-            <div id="errorMsg"></div>
+
+            <div id="errorMsg" role="alert"></div>
+
             <div id="codeContainer"></div>
+
             <div id="editorFooter">
-                <strong>🔥 Epic Mode:</strong> Uniforms available:
-                <span style="color: #4EC9B0">time</span> (float),
-                <span style="color: #4EC9B0">resolution</span> (vec2),
-                <span style="color: #4EC9B0">mouse</span> (vec2),
-                <span style="color: #4EC9B0">mouseClick</span> (vec2),
-                <span style="color: #4EC9B0">mouseDown</span> (float)
-                | <strong>Vim Mode:</strong> ESC=normal, i=insert |
-                <strong>Shortcuts:</strong> Ctrl+E=editor, Ctrl+S=save, Ctrl+,=settings
+                <div class="ef-col">
+                    <span class="ef-label">uniforms</span>
+                    <span class="ef-value">time · resolution · mouse · mouseClick · mouseDown</span>
+                </div>
+                <div class="ef-col">
+                    <span class="ef-label">modal</span>
+                    <span class="ef-value">esc · normal &nbsp;·&nbsp; i · insert</span>
+                </div>
+                <div class="ef-col">
+                    <span class="ef-label">keys</span>
+                    <span class="ef-value">⌘E editor &nbsp;·&nbsp; ⌘S save &nbsp;·&nbsp; ⇧⌘↩ commit &nbsp;·&nbsp; ⌘, prefs</span>
+                </div>
             </div>
         </div>
     </div>

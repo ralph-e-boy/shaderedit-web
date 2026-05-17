@@ -1,5 +1,118 @@
-// UI manager for the shader editor
 import { ShaderLibrary } from './shader-library.js';
+
+const MENU_BAR_HTML = `
+    <div class="masthead">
+        <span class="masthead-mark">se.fragment</span>
+        <span class="masthead-rev">v0.4 · GLSL editor</span>
+    </div>
+    <nav class="menu-rail" aria-label="Application menu">
+        <div class="menu-item" data-menu="file">
+            <span class="menu-label">file</span>
+            <div class="dropdown">
+                <div class="menu-option" data-action="new"><span class="opt-num">01</span><span class="opt-name">new</span><span class="opt-shortcut">draft</span></div>
+                <div class="menu-option" data-action="open"><span class="opt-num">02</span><span class="opt-name">open</span><span class="opt-shortcut">disk</span></div>
+                <div class="menu-option" data-action="save"><span class="opt-num">03</span><span class="opt-name">save</span><span class="opt-shortcut">⌘S</span></div>
+                <div class="separator"></div>
+                <div class="menu-option" data-action="export-png"><span class="opt-num">04</span><span class="opt-name">export png</span><span class="opt-shortcut">image</span></div>
+            </div>
+        </div>
+        <span class="menu-sep" aria-hidden="true">·</span>
+        <div class="menu-item" data-menu="edit">
+            <span class="menu-label">edit</span>
+            <div class="dropdown">
+                <div class="menu-option" data-action="copy"><span class="opt-num">01</span><span class="opt-name">copy</span><span class="opt-shortcut">⌘C</span></div>
+                <div class="menu-option" data-action="paste"><span class="opt-num">02</span><span class="opt-name">paste</span><span class="opt-shortcut">⌘V</span></div>
+                <div class="menu-option" data-action="select-all"><span class="opt-num">03</span><span class="opt-name">select all</span><span class="opt-shortcut">⌘A</span></div>
+                <div class="separator"></div>
+                <div class="menu-option" data-action="settings"><span class="opt-num">04</span><span class="opt-name">prefs</span><span class="opt-shortcut">⌘,</span></div>
+            </div>
+        </div>
+        <span class="menu-sep" aria-hidden="true">·</span>
+        <div class="menu-item" data-menu="view">
+            <span class="menu-label">view</span>
+            <div class="dropdown">
+                <div class="menu-option" data-action="fullscreen"><span class="opt-num">01</span><span class="opt-name">fullscreen</span><span class="opt-shortcut">f11</span></div>
+                <div class="menu-option" data-action="toggle-ui"><span class="opt-num">02</span><span class="opt-name">hide ui</span><span class="opt-shortcut">solo</span></div>
+            </div>
+        </div>
+        <span class="menu-sep" aria-hidden="true">·</span>
+        <div class="menu-item" data-menu="shader">
+            <span class="menu-label">shader</span>
+            <div class="dropdown">
+                <div class="menu-option" data-action="library"><span class="opt-num">01</span><span class="opt-name">library</span><span class="opt-shortcut">presets</span></div>
+            </div>
+        </div>
+    </nav>
+    <div class="menu-edit-button">
+        <button id="editBtn" data-action="toggle-editor" type="button"><span class="ed-stamp">edit</span><span class="ed-meta">⌘E</span></button>
+    </div>
+`;
+
+const settingsPanelHTML = (s) => `
+    <div class="settings-content">
+        <span class="bracket br-tl" aria-hidden="true"></span>
+        <span class="bracket br-tr" aria-hidden="true"></span>
+        <span class="bracket br-bl" aria-hidden="true"></span>
+        <span class="bracket br-br" aria-hidden="true"></span>
+        <div class="settings-header">
+            <div class="path-mark">
+                <span class="path-prefix">se</span>
+                <span class="path-slash">/</span>
+                <span class="path-name">prefs</span>
+            </div>
+            <h2>Preferences</h2>
+            <button class="close-btn" data-action="close-settings" aria-label="Close">×</button>
+        </div>
+        <div class="settings-body">
+            <div class="setting-row">
+                <span class="setting-num">01</span>
+                <span class="setting-label">vim keybindings</span>
+                <span class="setting-meta">modal editing; esc for normal, i for insert</span>
+                <label class="toggle"><input type="checkbox" id="vimMode" ${s.get('vimMode') ? 'checked' : ''}><span class="toggle-track"></span></label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-num">02</span>
+                <span class="setting-label">auto-compile</span>
+                <span class="setting-meta">recompile on edit, 300ms debounce</span>
+                <label class="toggle"><input type="checkbox" id="autoCompile" ${s.get('autoCompile') ? 'checked' : ''}><span class="toggle-track"></span></label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-num">03</span>
+                <span class="setting-label">line numbers</span>
+                <span class="setting-meta">gutter row indices</span>
+                <label class="toggle"><input type="checkbox" id="showLineNumbers" ${s.get('showLineNumbers') ? 'checked' : ''}><span class="toggle-track"></span></label>
+            </div>
+            <div class="setting-row range-row">
+                <span class="setting-num">04</span>
+                <span class="setting-label">type size</span>
+                <span class="setting-meta">editor body, 10–24 pt</span>
+                <div class="range-control">
+                    <input type="range" id="fontSize" min="10" max="24" value="${s.get('fontSize')}" />
+                    <span class="value">${s.get('fontSize')}<small>pt</small></span>
+                </div>
+            </div>
+        </div>
+    </div>
+`;
+
+const libraryPanelHTML = `
+    <div class="library-panel-content">
+        <span class="bracket br-tl" aria-hidden="true"></span>
+        <span class="bracket br-tr" aria-hidden="true"></span>
+        <span class="bracket br-bl" aria-hidden="true"></span>
+        <span class="bracket br-br" aria-hidden="true"></span>
+        <div class="library-panel-header">
+            <div class="path-mark">
+                <span class="path-prefix">se</span>
+                <span class="path-slash">/</span>
+                <span class="path-name">library</span>
+            </div>
+            <h2>Library</h2>
+            <button class="close-btn" data-action="close-library" aria-label="Close">×</button>
+        </div>
+        <div id="libraryContent" class="library-content"></div>
+    </div>
+`;
 
 export class UIManager {
     constructor(editor, settings) {
@@ -22,29 +135,27 @@ export class UIManager {
     }
 
     setupEventListeners() {
-        // Edit button
-        const editBtn = document.getElementById('editBtn');
-        editBtn.addEventListener('click', () => {
-            this.toggleEditor();
-        });
-
-        // Apply button (we'll remove this later for auto-compile)
         const applyBtn = document.getElementById('applyBtn');
         applyBtn.addEventListener('click', () => {
             this.closeEditor();
         });
 
-        // Settings changes
         document.addEventListener('settingsChanged', (e) => {
             this.handleSettingsChange(e.detail);
         });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            this.handleKeyboard(e);
+        document.addEventListener('shader-save-requested', () => {
+            this.saveFile();
         });
 
-        // Fullscreen change
+        document.addEventListener('shader-commit-requested', () => {
+            if (this.isEditorOpen) this.closeEditor();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            this.handleKeyboard(e);
+        }, true);
+
         document.addEventListener('fullscreenchange', () => {
             this.isFullscreen = !!document.fullscreenElement;
             this.updateUI();
@@ -55,71 +166,30 @@ export class UIManager {
         const menuBar = document.createElement('div');
         menuBar.id = 'menuBar';
         menuBar.className = 'menu-bar';
-        menuBar.innerHTML = `
-            <div class="menu-item" data-menu="file">
-                <span>File</span>
-                <div class="dropdown">
-                    <div class="menu-option" data-action="new">New</div>
-                    <div class="menu-option" data-action="open">Open</div>
-                    <div class="menu-option" data-action="save">Save</div>
-                    <div class="separator"></div>
-                    <div class="menu-option" data-action="export-png">Export PNG</div>
-                </div>
-            </div>
-            <div class="menu-item" data-menu="edit">
-                <span>Edit</span>
-                <div class="dropdown">
-                    <div class="menu-option" data-action="copy">Copy</div>
-                    <div class="menu-option" data-action="paste">Paste</div>
-                    <div class="menu-option" data-action="select-all">Select All</div>
-                    <div class="separator"></div>
-                    <div class="menu-option" data-action="settings">Settings</div>
-                </div>
-            </div>
-            <div class="menu-item" data-menu="view">
-                <span>View</span>
-                <div class="dropdown">
-                    <div class="menu-option" data-action="fullscreen">Fullscreen</div>
-                    <div class="menu-option" data-action="toggle-ui">Hide UI</div>
-                </div>
-            </div>
-            <div class="menu-item" data-menu="shader">
-                <span>Shader</span>
-                <div class="dropdown">
-                    <div class="menu-option" data-action="library">Library</div>
-                </div>
-            </div>
-            <div class="menu-edit-button">
-                <button id="menuEditBtn" data-action="toggle-editor">✏️ Edit Shader</button>
-            </div>
-        `;
+        menuBar.innerHTML = MENU_BAR_HTML;
 
-        // Insert before canvas
         const canvas = document.getElementById('canvas');
         canvas.parentNode.insertBefore(menuBar, canvas);
 
-        // Add event listeners for menu
         this.setupMenuEventListeners(menuBar);
     }
 
     setupMenuEventListeners(menuBar) {
-        // Remove any existing listeners to prevent duplicates
         const existingMenuBar = document.querySelector('.menu-bar');
         if (existingMenuBar && existingMenuBar !== menuBar) {
             existingMenuBar.remove();
         }
 
         menuBar.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent event bubbling
+            e.stopPropagation();
 
-            const action = e.target.dataset.action;
+            const action = e.target.dataset.action || e.target.closest('[data-action]')?.dataset.action;
             if (action) {
                 this.handleMenuAction(action);
                 this.closeAllDropdowns();
                 return;
             }
 
-            // Only handle clicks on menu item headers, not dropdowns
             const menuItem = e.target.closest('.menu-item');
             const isDropdownClick = e.target.closest('.dropdown');
 
@@ -127,21 +197,16 @@ export class UIManager {
                 const dropdown = menuItem.querySelector('.dropdown');
                 if (dropdown) {
                     const wasOpen = dropdown.classList.contains('show');
-
-                    // Always close all dropdowns first
                     this.closeAllDropdowns();
-
-                    // Then open this one only if it wasn't already open
                     if (!wasOpen) {
                         setTimeout(() => {
                             dropdown.classList.add('show');
-                        }, 10); // Small delay to ensure close happens first
+                        }, 10);
                     }
                 }
             }
         });
 
-        // Close dropdowns when clicking outside (but only add this listener once)
         if (!document._menuClickListenerAdded) {
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.menu-bar')) {
@@ -160,7 +225,7 @@ export class UIManager {
     handleMenuAction(action) {
         switch (action) {
             case 'new':
-                this.editor.setCode('// New shader\\nvoid main() {\\n    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\\n}');
+                this.editor.setCode('// new fragment\nvoid main() {\n    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n}\n');
                 break;
             case 'copy':
                 this.editor.copy();
@@ -202,39 +267,7 @@ export class UIManager {
         const settingsPanel = document.createElement('div');
         settingsPanel.id = 'settingsPanel';
         settingsPanel.className = 'settings-panel';
-        settingsPanel.innerHTML = `
-            <div class="settings-content">
-                <div class="settings-header">
-                    <h2>Settings</h2>
-                    <button class="close-btn" data-action="close-settings">×</button>
-                </div>
-                <div class="settings-body">
-                    <div class="setting-group">
-                        <label>
-                            <input type="checkbox" id="vimMode" ${this.settings.get('vimMode') ? 'checked' : ''}>
-                            Enable Vim/Vi keybindings
-                        </label>
-                    </div>
-                    <div class="setting-group">
-                        <label>
-                            <input type="checkbox" id="autoCompile" ${this.settings.get('autoCompile') ? 'checked' : ''}>
-                            Auto-compile on edit
-                        </label>
-                    </div>
-                    <div class="setting-group">
-                        <label>
-                            <input type="checkbox" id="showLineNumbers" ${this.settings.get('showLineNumbers') ? 'checked' : ''}>
-                            Show line numbers
-                        </label>
-                    </div>
-                    <div class="setting-group">
-                        <label>Font Size:</label>
-                        <input type="range" id="fontSize" min="10" max="24" value="${this.settings.get('fontSize')}" />
-                        <span class="value">${this.settings.get('fontSize')}px</span>
-                    </div>
-                </div>
-            </div>
-        `;
+        settingsPanel.innerHTML = settingsPanelHTML(this.settings);
 
         document.body.appendChild(settingsPanel);
         this.setupSettingsEventListeners(settingsPanel);
@@ -254,17 +287,16 @@ export class UIManager {
             if (id) {
                 this.settings.set(id, e.target.type === 'range' ? parseInt(value) : value);
 
-                // Update value display for range inputs
                 if (e.target.type === 'range') {
-                    const valueSpan = e.target.nextElementSibling;
+                    const wrap = e.target.closest('.range-control');
+                    const valueSpan = wrap && wrap.querySelector('.value');
                     if (valueSpan) {
-                        valueSpan.textContent = value + (id === 'fontSize' ? 'px' : '');
+                        valueSpan.innerHTML = value + (id === 'fontSize' ? '<small>pt</small>' : '');
                     }
                 }
             }
         });
 
-        // Close on outside click
         panel.addEventListener('click', (e) => {
             if (e.target === panel) {
                 this.hideSettings();
@@ -280,10 +312,10 @@ export class UIManager {
 
         if (this.isEditorOpen) {
             overlay.classList.add('open');
-            editBtn.textContent = 'Close Editor';
+            editBtn && editBtn.classList.add('is-active');
         } else {
             overlay.classList.remove('open');
-            editBtn.textContent = 'Edit Shader';
+            editBtn && editBtn.classList.remove('is-active');
         }
     }
 
@@ -293,7 +325,7 @@ export class UIManager {
 
         this.isEditorOpen = false;
         overlay.classList.remove('open');
-        editBtn.textContent = 'Edit Shader';
+        editBtn && editBtn.classList.remove('is-active');
     }
 
     showSettings() {
@@ -307,7 +339,6 @@ export class UIManager {
     showShaderLibrary() {
         document.getElementById('shaderLibraryPanel').classList.add('show');
         this.updateLibraryContent();
-        // Don't close the editor - let them both be open
     }
 
     hideShaderLibrary() {
@@ -324,20 +355,10 @@ export class UIManager {
         const libraryPanel = document.createElement('div');
         libraryPanel.id = 'shaderLibraryPanel';
         libraryPanel.className = 'shader-library-panel';
-        libraryPanel.innerHTML = `
-            <div class="library-panel-content">
-                <div class="library-panel-header">
-                    <button class="close-btn" data-action="close-library">×</button>
-                </div>
-                <div id="libraryContent" class="library-content">
-                    <!-- Library content will be inserted here -->
-                </div>
-            </div>
-        `;
+        libraryPanel.innerHTML = libraryPanelHTML;
 
         document.body.appendChild(libraryPanel);
 
-        // Setup close functionality
         libraryPanel.addEventListener('click', (e) => {
             if (e.target.dataset.action === 'close-library' || e.target === libraryPanel) {
                 this.hideShaderLibrary();
@@ -348,7 +369,6 @@ export class UIManager {
     setupLibraryEventListeners() {
         const libraryContent = document.getElementById('libraryContent');
 
-        // Category selection
         const categorySelect = libraryContent.querySelector('#categorySelect');
         if (categorySelect) {
             categorySelect.addEventListener('change', (e) => {
@@ -357,7 +377,8 @@ export class UIManager {
             });
         }
 
-        // Search functionality
+        this.wireCustomSelects(libraryContent);
+
         const searchInput = libraryContent.querySelector('#searchInput');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
@@ -365,9 +386,7 @@ export class UIManager {
             });
         }
 
-        // Shader actions and category toggles
         libraryContent.addEventListener('click', (e) => {
-            // Category header toggle
             const categoryHeader = e.target.closest('[data-toggle-category]');
             if (categoryHeader) {
                 const cat = categoryHeader.dataset.toggleCategory;
@@ -376,8 +395,8 @@ export class UIManager {
                 return;
             }
 
-            const action = e.target.dataset.action;
-            const shaderName = e.target.dataset.shader;
+            const action = e.target.dataset.action || e.target.closest('[data-action]')?.dataset.action;
+            const shaderName = e.target.dataset.shader || e.target.closest('[data-shader]')?.dataset.shader;
 
             switch (action) {
                 case 'load':
@@ -389,7 +408,6 @@ export class UIManager {
             }
         });
 
-        // Save current shader
         const saveBtn = libraryContent.querySelector('#saveCurrentShader');
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
@@ -405,30 +423,74 @@ export class UIManager {
         if (shader) {
             this.editor.setCode(shader.code);
             this.hideShaderLibrary();
-            // Keep editor open so user can see the loaded code
             if (!this.isEditorOpen) {
                 this.toggleEditor();
             }
-            console.log(`🚀 Loaded shader: ${shaderName}`);
         }
     }
 
     deleteShader(shaderName) {
-        if (confirm(`Are you sure you want to delete "${shaderName}"?`)) {
+        if (confirm(`Delete "${shaderName}"?`)) {
             this.shaderLibrary.deleteCustomShader(shaderName);
             this.updateLibraryContent();
         }
     }
 
     saveCurrentShader() {
-        const name = prompt('Enter a name for this shader:');
+        const name = prompt('Name this shader:');
         if (name) {
-            const description = prompt('Enter a description (optional):') || '';
+            const description = prompt('Brief description (optional):') || '';
             const code = this.editor.getCode();
             this.shaderLibrary.saveCustomShader(name, code, description);
             this.updateLibraryContent();
-            console.log(`💾 Saved shader: ${name}`);
         }
+    }
+
+    wireCustomSelects(root) {
+        const selects = root.querySelectorAll('[data-custom-select]');
+        selects.forEach(wrap => {
+            const toggle = wrap.querySelector('[data-cs-toggle]');
+            const popup = wrap.querySelector('[data-cs-popup]');
+            const native = wrap.querySelector('.cs-native');
+            if (!toggle || !popup || !native) return;
+
+            const close = () => {
+                wrap.classList.remove('is-open');
+                toggle.setAttribute('aria-expanded', 'false');
+            };
+            const open = () => {
+                document.querySelectorAll('[data-custom-select].is-open').forEach(w => {
+                    if (w !== wrap) w.classList.remove('is-open');
+                });
+                wrap.classList.add('is-open');
+                toggle.setAttribute('aria-expanded', 'true');
+            };
+
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                wrap.classList.contains('is-open') ? close() : open();
+            });
+
+            popup.addEventListener('click', (e) => {
+                const opt = e.target.closest('[data-cs-option]');
+                if (!opt) return;
+                const value = opt.dataset.csOption;
+                native.value = value;
+                native.dispatchEvent(new Event('change', { bubbles: true }));
+                close();
+            });
+
+            if (!document._customSelectCloseAdded) {
+                document.addEventListener('click', () => {
+                    document.querySelectorAll('[data-custom-select].is-open').forEach(w => {
+                        w.classList.remove('is-open');
+                        const t = w.querySelector('[data-cs-toggle]');
+                        if (t) t.setAttribute('aria-expanded', 'false');
+                    });
+                });
+                document._customSelectCloseAdded = true;
+            }
+        });
     }
 
     handleShaderSearch(query) {
@@ -436,10 +498,8 @@ export class UIManager {
         if (!librarySections) return;
 
         if (query.trim() === '') {
-            // Restore full accordion view
             this.updateLibraryContent();
         } else {
-            // Show flat search results (shader data is from trusted built-in presets)
             const results = this.shaderLibrary.searchShaders(query);
             librarySections.innerHTML = results.map(shader => this.shaderLibrary.createShaderRow(shader)).join('');
         }
@@ -454,7 +514,6 @@ export class UIManager {
     }
 
     handleKeyboard(e) {
-        // Keyboard shortcuts
         if (e.ctrlKey || e.metaKey) {
             switch (e.key) {
                 case 'e':
@@ -472,7 +531,6 @@ export class UIManager {
             }
         }
 
-        // Escape key
         if (e.key === 'Escape') {
             if (this.isUIHidden) {
                 this.showUI();
@@ -539,7 +597,6 @@ export class UIManager {
     toggleUIVisibility() {
         this.isUIHidden = true;
         document.getElementById('menuBar').style.display = 'none';
-        document.getElementById('editBtn').style.display = 'none';
         if (this.isEditorOpen) {
             this.closeEditor();
         }
@@ -552,19 +609,18 @@ export class UIManager {
             hint = document.createElement('div');
             hint.id = 'uiRestoreHint';
             hint.className = 'ui-restore-hint';
-            hint.textContent = 'Press ESC or click here to show UI';
+            hint.textContent = 'esc · restore chrome';
             hint.addEventListener('click', () => this.showUI());
             document.body.appendChild(hint);
         }
         hint.style.display = 'block';
         hint.style.opacity = '1';
-        setTimeout(() => { hint.style.opacity = '0.15'; }, 3000);
+        setTimeout(() => { hint.style.opacity = '0.18'; }, 3000);
     }
 
     showUI() {
         this.isUIHidden = false;
         document.getElementById('menuBar').style.display = 'flex';
-        document.getElementById('editBtn').style.display = 'block';
         const hint = document.getElementById('uiRestoreHint');
         if (hint) hint.style.display = 'none';
     }
@@ -588,11 +644,11 @@ export class UIManager {
             if (!file) return;
             const ext = '.' + file.name.split('.').pop().toLowerCase();
             if (!['.glsl', '.frag', '.vert', '.txt'].includes(ext)) {
-                alert('Please drop a shader file (.glsl, .frag, .vert, or .txt)');
+                alert('Drop a shader file (.glsl, .frag, .vert, .txt)');
                 return;
             }
             if (file.size > 1024 * 1024) {
-                alert('File is too large. Shader files should be under 1MB.');
+                alert('File too large; under 1MB please.');
                 return;
             }
             const reader = new FileReader();
@@ -621,15 +677,11 @@ export class UIManager {
     }
 
     updateUI() {
-        // Update UI based on current state
-        const editBtn = document.getElementById('editBtn');
         const menuBar = document.getElementById('menuBar');
-
+        if (!menuBar) return;
         if (this.isFullscreen || this.isUIHidden) {
-            editBtn.style.display = 'none';
             menuBar.style.display = 'none';
         } else {
-            editBtn.style.display = 'block';
             menuBar.style.display = 'flex';
         }
     }

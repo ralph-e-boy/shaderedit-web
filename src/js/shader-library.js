@@ -277,39 +277,61 @@ export class ShaderLibrary {
             return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
         });
 
-        const sectionsHTML = sortedCategories.map(cat => {
+        const sectionsHTML = sortedCategories.map((cat, idx) => {
             const items = grouped[cat];
             const isCollapsed = this.collapsedCategories.has(cat);
-            const chevron = isCollapsed ? '&#9654;' : '&#9660;';
+            const chevron = isCollapsed ? '▸' : '▾';
+            const num = String(idx + 1).padStart(2, '0');
 
             return `
-                <div class="library-category" data-category="${cat}">
+                <div class="library-category${isCollapsed ? ' is-collapsed' : ''}" data-category="${cat}">
                     <div class="category-header" data-toggle-category="${cat}">
-                        <span class="category-chevron">${chevron}</span>
-                        <span class="category-icon">${this.getCategoryIcon(cat)}</span>
+                        <span class="category-num">${num}</span>
                         <span class="category-name">${this.getCategoryLabel(cat)}</span>
-                        <span class="category-count">${items.length}</span>
+                        <span class="category-rule"></span>
+                        <span class="category-count">${items.length}<small>${items.length === 1 ? ' shader' : ' shaders'}</small></span>
+                        <span class="category-chevron">${chevron}</span>
                     </div>
-                    <div class="category-items" style="${isCollapsed ? 'display:none' : ''}">
-                        ${items.map(shader => this.createShaderRow(shader)).join('')}
+                    <div class="category-items"${isCollapsed ? ' style="display:none"' : ''}>
+                        ${items.map((shader, i) => this.createShaderRow(shader, i)).join('')}
                     </div>
                 </div>
             `;
         }).join('');
 
+        const currentLabel = this.getCategoryDisplayName(this.currentCategory);
+
         return `
             <div class="library-header">
-                <h2>Shader Library</h2>
                 <div class="library-controls">
-                    <select id="categorySelect">
-                        ${categories.map(cat =>
-                            `<option value="${cat}" ${cat === this.currentCategory ? 'selected' : ''}>
-                                ${this.getCategoryDisplayName(cat)}
-                            </option>`
-                        ).join('')}
-                    </select>
-                    <input type="text" id="searchInput" placeholder="Search shaders..." />
-                    <button id="saveCurrentShader">Save Current</button>
+                    <div class="lib-field">
+                        <span class="lib-field-label">filter</span>
+                        <div class="custom-select" data-custom-select>
+                            <button type="button" class="cs-button" data-cs-toggle aria-haspopup="listbox" aria-expanded="false">
+                                <span class="cs-value" data-cs-value>${currentLabel}</span>
+                                <span class="cs-chevron" aria-hidden="true">▾</span>
+                            </button>
+                            <select id="categorySelect" class="cs-native" hidden>
+                                ${categories.map(cat =>
+                                    `<option value="${cat}" ${cat === this.currentCategory ? 'selected' : ''}>${this.getCategoryDisplayName(cat)}</option>`
+                                ).join('')}
+                            </select>
+                            <ul class="cs-popup" role="listbox" data-cs-popup>
+                                ${categories.map((cat, i) => `
+                                    <li class="cs-option${cat === this.currentCategory ? ' is-selected' : ''}" role="option" data-cs-option="${cat}" tabindex="-1">
+                                        <span class="opt-num">${String(i + 1).padStart(2, '0')}</span>
+                                        <span class="opt-name">${this.getCategoryDisplayName(cat)}</span>
+                                        ${cat === this.currentCategory ? '<span class="opt-shortcut">selected</span>' : '<span class="opt-shortcut"></span>'}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                    <label class="lib-field lib-field-search">
+                        <span class="lib-field-label">find</span>
+                        <input type="text" id="searchInput" placeholder="by name, kind, description…" />
+                    </label>
+                    <button id="saveCurrentShader" type="button"><span>save current</span><span class="b-meta">↓</span></button>
                 </div>
             </div>
             <div class="library-sections">
@@ -341,33 +363,28 @@ export class ShaderLibrary {
         return labels[category] || category;
     }
 
-    createShaderRow(shader) {
+    createShaderRow(shader, index = 0) {
+        const num = String(index + 1).padStart(2, '0');
         const deleteBtn = !shader.isPreset
-            ? `<button class="delete-btn" data-action="delete" data-shader="${shader.name}">Delete</button>`
+            ? `<button class="delete-btn" data-action="delete" data-shader="${shader.name}" aria-label="Delete">delete</button>`
             : '';
 
         return `
-            <div class="shader-row" data-shader-name="${shader.name}">
+            <div class="shader-row${shader.isPreset ? '' : ' is-custom'}" data-shader-name="${shader.name}">
+                <span class="row-num">${num}</span>
                 <div class="shader-row-info">
                     <span class="shader-row-name">${shader.name}</span>
                     <span class="shader-row-desc">${shader.description}</span>
                 </div>
                 <div class="shader-row-actions">
                     ${deleteBtn}
-                    <button class="load-btn" data-action="load" data-shader="${shader.name}">Load</button>
+                    <button class="load-btn" data-action="load" data-shader="${shader.name}"><span>load</span><span class="b-meta">→</span></button>
                 </div>
             </div>
         `;
     }
 
     getCategoryIcon(category) {
-        const icons = {
-            'fractals': '\u{1F300}',
-            'nature': '\u{1F30A}',
-            'geometric': '\u{1F4D0}',
-            'trippy': '\u{1F386}',
-            'custom': '\u{1F4BE}'
-        };
-        return icons[category] || '\u{2728}';
+        return '';
     }
 }
