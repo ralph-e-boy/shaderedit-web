@@ -121,6 +121,12 @@ export class ShaderLibrary {
                 description: 'Volumetric cloud layers drifting across a sunny sky',
                 uniforms: ['time', 'resolution', 'mouse']
             },
+            'Rain Storm': {
+                file: './src/shaders/nature-rain.glsl',
+                category: 'nature',
+                description: 'Wet afternoon: parallax rain streaks, rippling puddles, occasional lightning',
+                uniforms: ['time', 'resolution', 'mouse']
+            },
             'Geometric Tunnel': {
                 file: './src/shaders/geometric-tunnel.glsl',
                 category: 'geometric',
