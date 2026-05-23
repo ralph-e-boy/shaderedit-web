@@ -552,6 +552,7 @@ html, body {
 #editorOverlay.dock-right #editorHeader {
     gap: 10px;
     flex-wrap: wrap;
+    justify-content: flex-end;
     padding: 16px var(--inset) 14px;
 }
 #editorOverlay.dock-left  #editorHeader h2,
@@ -673,6 +674,8 @@ body.dock-resizing * {
     border: var(--hair) solid var(--rule);
     align-self: flex-end;
     margin-bottom: 4px;
+    height: 34px;
+    box-sizing: border-box;
     font-family: var(--mono);
     user-select: none;
 }
@@ -699,11 +702,11 @@ body.dock-resizing * {
 }
 .font-stepper .fs-value {
     display: inline-flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: center;
     gap: 1px;
     min-width: 52px;
-    padding: 7px 6px 6px;
+    padding: 0 6px;
     font-size: 13px;
     font-weight: 600;
     color: var(--paper);
@@ -727,6 +730,8 @@ body.dock-resizing * {
     border: var(--hair) solid var(--rule);
     align-self: flex-end;
     margin-bottom: 4px;
+    height: 34px;
+    box-sizing: border-box;
     font-family: var(--mono);
     user-select: none;
 }
@@ -737,8 +742,7 @@ body.dock-resizing * {
     font-family: var(--mono);
     font-size: 14px;
     font-weight: 500;
-    width: 28px;
-    height: 30px;
+    width: 30px;
     cursor: pointer;
     padding: 0;
     transition: color 120ms ease-out, background-color 120ms ease-out;
@@ -763,8 +767,9 @@ body.dock-resizing * {
 #editorHeader .gear-btn {
     display: inline-grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
+    box-sizing: border-box;
     padding: 0;
     background: transparent;
     border: var(--hair) solid var(--rule);
@@ -792,7 +797,9 @@ body.dock-resizing * {
     border: var(--hair) solid var(--rule);
     color: var(--paper);
     cursor: pointer;
-    padding: 9px 14px 8px;
+    height: 34px;
+    box-sizing: border-box;
+    padding: 0 14px;
     font-family: var(--mono);
     font-size: 13px;
     font-weight: 600;
