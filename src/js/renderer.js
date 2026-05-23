@@ -23,6 +23,11 @@ export class ShaderRenderer {
             throw new Error('WebGL not supported');
         }
 
+        // Enable shader derivative functions (fwidth, dFdx, dFdy).
+        // Required by some shaders for analytic anti-aliasing of
+        // contour lines / SDFs.
+        this.gl.getExtension('OES_standard_derivatives');
+
         // Setup full-screen quad
         this.setupQuad();
 

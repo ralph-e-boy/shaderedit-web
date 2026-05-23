@@ -24,7 +24,7 @@ const MENU_BAR_HTML = `
                 <div class="menu-option" data-action="paste"><span class="opt-num">02</span><span class="opt-name">paste</span><span class="opt-shortcut">⌘V</span></div>
                 <div class="menu-option" data-action="select-all"><span class="opt-num">03</span><span class="opt-name">select all</span><span class="opt-shortcut">⌘A</span></div>
                 <div class="separator"></div>
-                <div class="menu-option" data-action="settings"><span class="opt-num">04</span><span class="opt-name">prefs</span><span class="opt-shortcut">⌘,</span></div>
+                <div class="menu-option" data-action="settings"><span class="opt-num">04</span><span class="opt-name">prefs</span><span class="opt-shortcut">⇧⌘,</span></div>
             </div>
         </div>
         <span class="menu-sep" aria-hidden="true">·</span>
@@ -172,11 +172,34 @@ export class UIManager {
             overlay.classList.add('is-dismissed');
             overlay.setAttribute('aria-hidden', 'true');
             setTimeout(() => overlay.remove(), 400);
-            document.removeEventListener('click', dismiss, true);
+            document.removeEventListener('click', onClick, true);
+        };
+
+        const onClick = (e) => {
+            const action = e.target.closest('[data-welcome-action]')?.dataset.welcomeAction;
+            if (action === 'open-basics') {
+                e.preventDefault();
+                e.stopPropagation();
+                this.openLibraryAtCategory('basics');
+            }
+            dismiss();
         };
 
         setTimeout(show, 500);
-        document.addEventListener('click', dismiss, true);
+        document.addEventListener('click', onClick, true);
+    }
+
+    openLibraryAtCategory(category) {
+        this.shaderLibrary.currentCategory = category;
+        const order = this.shaderLibrary.getCategoryOrder();
+        for (const cat of order) {
+            if (cat === category) {
+                this.shaderLibrary.collapsedCategories.delete(cat);
+            } else {
+                this.shaderLibrary.collapsedCategories.add(cat);
+            }
+        }
+        this.showShaderLibrary();
     }
 
     setupEventListeners() {
@@ -192,7 +215,15 @@ export class UIManager {
             const action = btn.dataset.action;
             if (action === 'font-inc') this.bumpFontSize(+1);
             else if (action === 'font-dec') this.bumpFontSize(-1);
+            else if (action === 'dock-left' || action === 'dock-right') {
+                const target = action === 'dock-left' ? 'left' : 'right';
+                const current = this.settings.get('editorDock', 'center');
+                this.setEditorDock(current === target ? 'center' : target);
+            }
         });
+
+        this.setupDockResize();
+        this.applyDockWidth(this.settings.get('editorDockWidth', 640));
 
         this.syncFontSizeReadout(this.settings.get('fontSize', 14));
 
@@ -370,6 +401,7 @@ export class UIManager {
         if (this.isEditorOpen) {
             overlay.classList.add('open');
             editBtn && editBtn.classList.add('is-active');
+            this.setEditorDock(this.settings.get('editorDock', 'center'));
         } else {
             overlay.classList.remove('open');
             editBtn && editBtn.classList.remove('is-active');
@@ -383,6 +415,77 @@ export class UIManager {
         this.isEditorOpen = false;
         overlay.classList.remove('open');
         editBtn && editBtn.classList.remove('is-active');
+    }
+
+    setEditorDock(mode) {
+        const overlay = document.getElementById('editorOverlay');
+        overlay.classList.remove('dock-left', 'dock-right');
+        if (mode === 'left')  overlay.classList.add('dock-left');
+        if (mode === 'right') overlay.classList.add('dock-right');
+        this.settings.set('editorDock', mode);
+        this.updateDockButtons(mode);
+        requestAnimationFrame(() => this.editor.focus());
+    }
+
+    updateDockButtons(mode) {
+        const left = document.querySelector('[data-action="dock-left"]');
+        const right = document.querySelector('[data-action="dock-right"]');
+        left && left.classList.toggle('is-active', mode === 'left');
+        right && right.classList.toggle('is-active', mode === 'right');
+    }
+
+    applyDockWidth(px) {
+        const w = Math.round(px);
+        document.documentElement.style.setProperty('--dock-width', `${w}px`);
+        return w;
+    }
+
+    setupDockResize() {
+        const handle = document.getElementById('dockResizeHandle');
+        if (!handle) return;
+        let dragging = false;
+        let mode = 'center';
+        let pointerId = null;
+        const vw = () => document.documentElement.clientWidth;
+
+        handle.addEventListener('pointerdown', (e) => {
+            mode = this.settings.get('editorDock', 'center');
+            if (mode !== 'left' && mode !== 'right') return;
+            dragging = true;
+            pointerId = e.pointerId;
+            handle.setPointerCapture(pointerId);
+            handle.classList.add('is-dragging');
+            document.body.classList.add('dock-resizing');
+            e.preventDefault();
+        });
+
+        handle.addEventListener('pointermove', (e) => {
+            if (!dragging || e.pointerId !== pointerId) return;
+            const target = mode === 'left'
+                ? e.clientX - 16
+                : vw() - e.clientX - 16;
+            this.applyDockWidth(target);
+        });
+
+        const stop = (e) => {
+            if (!dragging) return;
+            if (e && e.pointerId !== undefined && e.pointerId !== pointerId) return;
+            dragging = false;
+            if (pointerId !== null && handle.hasPointerCapture(pointerId)) {
+                handle.releasePointerCapture(pointerId);
+            }
+            pointerId = null;
+            handle.classList.remove('is-dragging');
+            document.body.classList.remove('dock-resizing');
+            const current = parseInt(
+                getComputedStyle(document.documentElement).getPropertyValue('--dock-width'),
+                10
+            );
+            if (!Number.isNaN(current)) this.settings.set('editorDockWidth', current);
+        };
+        handle.addEventListener('pointerup', stop);
+        handle.addEventListener('pointercancel', stop);
+        handle.addEventListener('lostpointercapture', stop);
     }
 
     showSettings() {
@@ -481,9 +584,8 @@ export class UIManager {
             this.editor.setCode(shader.code);
             this.setShaderTitle(shaderName);
             this.hideShaderLibrary();
-            if (!this.isEditorOpen) {
-                this.toggleEditor();
-            }
+            // Don't auto-open the editor — let the user see the shader first.
+            // They can hit ⌘E or the Edit button if they want to look at the code.
         }
     }
 
@@ -574,6 +676,11 @@ export class UIManager {
 
     handleKeyboard(e) {
         if (e.ctrlKey || e.metaKey) {
+            if (e.shiftKey && e.code === 'Comma') {
+                e.preventDefault();
+                this.showSettings();
+                return;
+            }
             switch (e.key) {
                 case 'e':
                     e.preventDefault();
@@ -582,10 +689,6 @@ export class UIManager {
                 case 's':
                     e.preventDefault();
                     this.saveFile();
-                    break;
-                case ',':
-                    e.preventDefault();
-                    this.showSettings();
                     break;
             }
         }

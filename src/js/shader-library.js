@@ -168,6 +168,37 @@ export class ShaderLibrary {
                 category: 'trippy',
                 description: 'Hyperspace star tunnel with radial streaks',
                 uniforms: ['time', 'resolution', 'mouse']
+            },
+            // ---------- ART ----------
+            'Boomerang': {
+                file: './src/shaders/art-boomerang.glsl',
+                category: 'art',
+                description: 'After Raymond Loewy — scribble-loops on pale teal, two ink weights overlapping',
+                uniforms: ['time', 'resolution']
+            },
+            'Drip': {
+                file: './src/shaders/art-pollock.glsl',
+                category: 'art',
+                description: 'After Jackson Pollock — layered FBM splatters on canvas',
+                uniforms: ['time', 'resolution']
+            },
+            'Op Art': {
+                file: './src/shaders/art-opart.glsl',
+                category: 'art',
+                description: 'After Bridget Riley — high-contrast bands warped into 3D folds',
+                uniforms: ['time', 'resolution']
+            },
+            'Vega': {
+                file: './src/shaders/art-vasarely.glsl',
+                category: 'art',
+                description: 'After Victor Vasarely — square grid bulged into illusion of spheres',
+                uniforms: ['time', 'resolution']
+            },
+            'Composition': {
+                file: './src/shaders/art-mondrian.glsl',
+                category: 'art',
+                description: 'After Piet Mondrian — primary rectangles inside a black grid',
+                uniforms: ['time', 'resolution']
             }
         };
 
@@ -293,7 +324,7 @@ export class ShaderLibrary {
     }
 
     getCategoryOrder() {
-        return ['basics', 'noise', 'fractals', 'nature', 'geometric', 'trippy', 'custom'];
+        return ['basics', 'noise', 'fractals', 'nature', 'geometric', 'trippy', 'art', 'custom'];
     }
 
     searchShaders(query) {
@@ -406,6 +437,7 @@ export class ShaderLibrary {
             'nature': 'Nature',
             'geometric': 'Geometric',
             'trippy': 'Trippy',
+            'art': 'Art History',
             'custom': 'Custom'
         };
         return displayNames[category] || category;
@@ -419,6 +451,7 @@ export class ShaderLibrary {
             'nature': 'Nature',
             'geometric': 'Geometric',
             'trippy': 'Trippy',
+            'art': 'Art History',
             'custom': 'Custom'
         };
         return labels[category] || category;

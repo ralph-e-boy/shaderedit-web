@@ -215,6 +215,13 @@ html, body {
     border-bottom: var(--hair) solid var(--vermillion-dim);
     padding-bottom: 1px;
 }
+.welcome-keys dd em[data-welcome-action] {
+    cursor: pointer;
+    transition: border-bottom-color 120ms ease;
+}
+.welcome-keys dd em[data-welcome-action]:hover {
+    border-bottom-color: var(--vermillion);
+}
 
 .welcome-dismiss {
     padding-top: 16px;
@@ -513,6 +520,90 @@ html, body {
     to   { transform: translateY(0); opacity: 1; }
 }
 
+#editorOverlay.dock-left,
+#editorOverlay.dock-right {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    pointer-events: none;
+    animation: none;
+    padding: 16px;
+    align-items: stretch;
+}
+#editorOverlay.dock-left  { justify-content: flex-start; }
+#editorOverlay.dock-right { justify-content: flex-end; }
+
+#editorOverlay.dock-left  #editorPanel,
+#editorOverlay.dock-right #editorPanel {
+    width: var(--dock-width, 640px);
+    height: 100%;
+    max-height: none;
+    pointer-events: auto;
+    animation: none;
+}
+
+/* When docked, hide the decorative path-mark (h2 has the name) and tighten header */
+#editorOverlay.dock-left  #editorHeader .path-mark,
+#editorOverlay.dock-right #editorHeader .path-mark { display: none; }
+
+#editorOverlay.dock-left  #editorHeader,
+#editorOverlay.dock-right #editorHeader {
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 16px var(--inset) 14px;
+}
+#editorOverlay.dock-left  #editorHeader h2,
+#editorOverlay.dock-right #editorHeader h2 {
+    font-size: 20px;
+    flex-basis: 100%;
+    margin-bottom: 4px;
+}
+
+/* Resize handle on the inner edge of the docked panel */
+.dock-resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 14px;
+    cursor: ew-resize;
+    z-index: 50;
+    display: none;
+    background: color-mix(in oklab, var(--vermillion) 12%, transparent);
+    transition: background-color 120ms ease-out, width 120ms ease-out;
+    touch-action: none;
+}
+#editorOverlay.dock-left  .dock-resize-handle { display: block; right: 0; }
+#editorOverlay.dock-right .dock-resize-handle { display: block; left:  0; }
+.dock-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    background: var(--vermillion);
+    opacity: 0.55;
+    border-radius: 1px;
+}
+.dock-resize-handle:hover,
+.dock-resize-handle.is-dragging {
+    background: color-mix(in oklab, var(--vermillion) 55%, transparent);
+    width: 18px;
+}
+.dock-resize-handle:hover::after,
+.dock-resize-handle.is-dragging::after {
+    opacity: 1;
+    height: 44px;
+}
+
+/* While dragging, force the resize cursor everywhere (override cm-content's text cursor) */
+body.dock-resizing,
+body.dock-resizing * {
+    cursor: ew-resize !important;
+    user-select: none !important;
+}
+
 .bracket {
     position: absolute;
     width: 14px; height: 14px;
@@ -632,6 +723,45 @@ html, body {
     text-transform: uppercase;
     letter-spacing: 0.10em;
     margin-left: 2px;
+}
+
+.dock-stepper {
+    display: inline-flex;
+    align-items: stretch;
+    border: var(--hair) solid var(--rule);
+    align-self: flex-end;
+    margin-bottom: 4px;
+    font-family: var(--mono);
+    user-select: none;
+}
+.dock-stepper .dk-btn {
+    background: transparent;
+    border: none;
+    color: var(--paper-dim);
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    width: 28px;
+    height: 30px;
+    cursor: pointer;
+    padding: 0;
+    transition: color 120ms ease-out, background-color 120ms ease-out;
+    display: grid;
+    place-items: center;
+}
+.dock-stepper .dk-btn + .dk-btn {
+    border-left: var(--hair) solid var(--rule);
+}
+.dock-stepper .dk-btn:hover {
+    color: var(--vermillion);
+    background-color: color-mix(in oklab, var(--vermillion) 12%, transparent);
+}
+.dock-stepper .dk-btn:active {
+    background-color: color-mix(in oklab, var(--vermillion) 22%, transparent);
+}
+.dock-stepper .dk-btn.is-active {
+    color: var(--vermillion);
+    background-color: color-mix(in oklab, var(--vermillion) 18%, transparent);
 }
 
 #applyBtn {
@@ -1486,6 +1616,22 @@ body.drag-over::after {
     .menu-edit-button button { padding: 6px 10px 5px; font-size: 12px; }
 
     #editorOverlay, .settings-panel, .shader-library-panel { padding: 16px; }
+    #editorOverlay.dock-left,
+    #editorOverlay.dock-right {
+        justify-content: center;
+        pointer-events: auto;
+        background: rgba(0, 0, 0, 0.50);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+    #editorOverlay.dock-left  #editorPanel,
+    #editorOverlay.dock-right #editorPanel {
+        width: min(1200px, 100%);
+        height: auto;
+        max-height: 96vh;
+    }
+    .dock-stepper { display: none; }
+    .dock-resize-handle { display: none !important; }
     #editorHeader { padding: 18px var(--inset) 12px; flex-wrap: wrap; }
     #editorHeader h2 { font-size: 26px; }
     #editorFooter { grid-template-columns: 1fr; gap: 10px; }

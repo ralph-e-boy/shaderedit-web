@@ -51,16 +51,17 @@
                 <span class="we-mark">se.fragment</span>
                 <span class="we-rev">v0.4 · GLSL editor</span>
             </div>
-            <h1 class="welcome-title">A real-time fragment shader editor</h1>
+            <h1 class="welcome-title">a real-time fragment shader editor</h1>
             <p class="welcome-body">
-                Write GLSL on the left; it compiles and runs on the canvas behind, live.
-                Errors highlight in the editor as you type. No build step.
+                • Write / edit GLSL code in editor panel <br/>
+								• Shaders compile and run automatically <br/>
+                • vi-style editor highlights errors as you type
             </p>
             <dl class="welcome-keys">
                 <div><dt>⌘E</dt><dd>open / close the editor</dd></div>
-                <div><dt>Shader → Library</dt><dd>preset gallery; start with <em>Basics</em> if new to GLSL</dd></div>
+                <div><dt>Shader → Library</dt><dd>preset gallery; start with <em data-welcome-action="open-basics">Basics</em> if new to GLSL</dd></div>
                 <div><dt>⌘S</dt><dd>save the current fragment to a .glsl file</dd></div>
-                <div><dt>⌘,</dt><dd>preferences</dd></div>
+                <div><dt>⇧⌘,</dt><dd>preferences</dd></div>
             </dl>
             <div class="welcome-dismiss">click anywhere to begin</div>
         </div>
@@ -72,6 +73,7 @@
             <span class="bracket br-tr" aria-hidden="true"></span>
             <span class="bracket br-bl" aria-hidden="true"></span>
             <span class="bracket br-br" aria-hidden="true"></span>
+            <div id="dockResizeHandle" class="dock-resize-handle" aria-hidden="true"></div>
 
             <div id="editorHeader">
                 <div class="path-mark">
@@ -86,6 +88,10 @@
                     <button type="button" class="fs-btn" data-action="font-dec" aria-label="Decrease font size">−</button>
                     <span class="fs-value" id="fontSizeReadout">14<small>pt</small></span>
                     <button type="button" class="fs-btn" data-action="font-inc" aria-label="Increase font size">+</button>
+                </div>
+                <div class="dock-stepper" role="group" aria-label="Editor dock position">
+                    <button type="button" class="dk-btn" data-action="dock-left" aria-label="Pin editor left" title="Pin left">◧</button>
+                    <button type="button" class="dk-btn" data-action="dock-right" aria-label="Pin editor right" title="Pin right">◨</button>
                 </div>
                 <button id="applyBtn" type="button"><span class="ab-stamp">commit</span><span class="ab-meta">⇧⌘↩</span></button>
             </div>
@@ -105,7 +111,7 @@
                 </div>
                 <div class="ef-col">
                     <span class="ef-label">keys</span>
-                    <span class="ef-value">⌘E editor &nbsp;·&nbsp; ⌘S save &nbsp;·&nbsp; ⇧⌘↩ commit &nbsp;·&nbsp; ⌘, prefs</span>
+                    <span class="ef-value">⌘E editor &nbsp;·&nbsp; ⌘S save &nbsp;·&nbsp; ⇧⌘↩ commit &nbsp;·&nbsp; ⇧⌘, prefs</span>
                 </div>
             </div>
         </div>
