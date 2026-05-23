@@ -442,18 +442,6 @@ html, body {
     margin-left: 16px;
     padding-left: 20px;
 }
-.menu-edit-button .menu-gear {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    color: var(--paper-dim);
-    gap: 0;
-}
-.menu-edit-button .menu-gear:hover { color: var(--vermillion); }
-.menu-edit-button .menu-gear svg { display: block; }
 .menu-edit-button button {
     display: inline-flex;
     align-items: center;
@@ -771,6 +759,30 @@ body.dock-resizing * {
     color: var(--vermillion);
     background-color: color-mix(in oklab, var(--vermillion) 18%, transparent);
 }
+
+#editorHeader .gear-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: transparent;
+    border: var(--hair) solid var(--rule);
+    color: var(--paper-dim);
+    cursor: pointer;
+    align-self: flex-end;
+    margin-bottom: 4px;
+    transition: color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out;
+}
+#editorHeader .gear-btn:hover {
+    color: var(--vermillion);
+    border-color: var(--vermillion);
+    background-color: color-mix(in oklab, var(--vermillion) 12%, transparent);
+}
+#editorHeader .gear-btn:active {
+    background-color: color-mix(in oklab, var(--vermillion) 22%, transparent);
+}
+#editorHeader .gear-btn svg { display: block; }
 
 #applyBtn {
     display: inline-flex;
