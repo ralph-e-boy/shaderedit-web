@@ -1,9 +1,14 @@
+// Touch device detection — vim without a real keyboard is misery
+const isTouchDevice = () =>
+    typeof window !== 'undefined' &&
+    (('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0);
+
 // Settings manager with localStorage persistence
 export class SettingsManager {
     constructor() {
         this.settings = {};
         this.defaults = {
-            vimMode: true,
+            vimMode: !isTouchDevice(),
             theme: 'dark',
             fontSize: 14,
             tabSize: 4,

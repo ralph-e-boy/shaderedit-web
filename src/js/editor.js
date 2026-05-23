@@ -52,6 +52,12 @@ export class ShaderEditor {
                 this.fontSizeCompartment.of(EditorView.theme({
                     '&': { fontSize: `${fontSize}px` },
                 })),
+                EditorView.contentAttributes.of({
+                    autocapitalize: 'off',
+                    autocorrect: 'off',
+                    autocomplete: 'off',
+                    spellcheck: 'false',
+                }),
                 keymap.of([
                     {
                         key: 'Mod-s',

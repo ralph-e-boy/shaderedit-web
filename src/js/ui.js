@@ -44,6 +44,17 @@ const MENU_BAR_HTML = `
             </div>
         </div>
     </nav>
+    <nav class="menu-mobile" aria-label="Mobile menu">
+        <button class="mm-btn mm-primary" data-action="library" type="button">
+            <span class="mm-stamp">library</span>
+            <span class="mm-meta">shaders</span>
+        </button>
+        <button class="mm-btn" data-action="fullscreen" type="button" aria-label="Fullscreen">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+            </svg>
+        </button>
+    </nav>
     <div class="menu-edit-button">
         <button id="editBtn" data-action="toggle-editor" type="button"><span class="ed-stamp">edit</span><span class="ed-meta">⌘E</span></button>
     </div>
@@ -597,10 +608,15 @@ export class UIManager {
             switch (action) {
                 case 'load':
                     this.loadShader(shaderName);
-                    break;
+                    return;
                 case 'delete':
                     this.deleteShader(shaderName);
-                    break;
+                    return;
+            }
+
+            const row = e.target.closest('.shader-row');
+            if (row && row.dataset.shaderName) {
+                this.loadShader(row.dataset.shaderName);
             }
         });
 
