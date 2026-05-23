@@ -1,4 +1,5 @@
 import { ShaderLibrary } from './shader-library.js';
+import { THEME_LIST, DEFAULT_THEME } from './editor-themes.js';
 
 const MENU_BAR_HTML = `
     <div class="masthead">
@@ -44,6 +45,12 @@ const MENU_BAR_HTML = `
         </div>
     </nav>
     <div class="menu-edit-button">
+        <button class="menu-gear" data-action="settings" type="button" aria-label="Preferences" title="Preferences (⇧⌘,)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
         <button id="editBtn" data-action="toggle-editor" type="button"><span class="ed-stamp">edit</span><span class="ed-meta">⌘E</span></button>
     </div>
 `;
@@ -89,6 +96,28 @@ const settingsPanelHTML = (s) => `
                 <div class="range-control">
                     <input type="range" id="fontSize" min="10" max="24" value="${s.get('fontSize')}" />
                     <span class="value">${s.get('fontSize')}<small>pt</small></span>
+                </div>
+            </div>
+            <div class="setting-row select-row">
+                <span class="setting-num">05</span>
+                <span class="setting-label">syntax theme</span>
+                <span class="setting-meta">editor colors; choose what's easiest to read</span>
+                <div class="select-control">
+                    <select id="editorTheme">
+                        ${THEME_LIST.map(({ id, name }) => {
+                            const sel = s.get('editorTheme', DEFAULT_THEME) === id ? 'selected' : '';
+                            return `<option value="${id}" ${sel}>${name}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="setting-row range-row">
+                <span class="setting-num">06</span>
+                <span class="setting-label">panel opacity</span>
+                <span class="setting-meta">see the shader through the editor; 10–100%</span>
+                <div class="range-control">
+                    <input type="range" id="editorOpacity" min="10" max="100" value="${s.get('editorOpacity', 95)}" />
+                    <span class="value">${s.get('editorOpacity', 95)}<small>%</small></span>
                 </div>
             </div>
         </div>
@@ -224,6 +253,7 @@ export class UIManager {
 
         this.setupDockResize();
         this.applyDockWidth(this.settings.get('editorDockWidth', 640));
+        this.applyEditorOpacity(this.settings.get('editorOpacity', 95));
 
         this.syncFontSizeReadout(this.settings.get('fontSize', 14));
 
@@ -379,7 +409,13 @@ export class UIManager {
                     const wrap = e.target.closest('.range-control');
                     const valueSpan = wrap && wrap.querySelector('.value');
                     if (valueSpan) {
-                        valueSpan.innerHTML = value + (id === 'fontSize' ? '<small>pt</small>' : '');
+                        const unit = id === 'fontSize' ? 'pt' : id === 'editorOpacity' ? '%' : '';
+                        valueSpan.textContent = value;
+                        if (unit) {
+                            const small = document.createElement('small');
+                            small.textContent = unit;
+                            valueSpan.appendChild(small);
+                        }
                     }
                 }
             }
@@ -438,6 +474,11 @@ export class UIManager {
         const w = Math.round(px);
         document.documentElement.style.setProperty('--dock-width', `${w}px`);
         return w;
+    }
+
+    applyEditorOpacity(pct) {
+        const v = Math.max(0, Math.min(100, Math.round(pct))) / 100;
+        document.documentElement.style.setProperty('--editor-panel-opacity', String(v));
     }
 
     setupDockResize() {
@@ -837,6 +878,12 @@ export class UIManager {
             case 'fontSize':
                 this.editor.setFontSize(value);
                 this.syncFontSizeReadout(value);
+                break;
+            case 'editorTheme':
+                this.editor.setTheme(value);
+                break;
+            case 'editorOpacity':
+                this.applyEditorOpacity(value);
                 break;
         }
     }

@@ -13,6 +13,7 @@
     --ink:          oklch(11% 0.012 30);
     --ink-glass:    color-mix(in oklab, oklch(11% 0.012 30) 92%, transparent);
     --ink-card:     color-mix(in oklab, oklch(9% 0.010 30) 95%, transparent);
+    --editor-panel-opacity: 0.95;
     --ink-rail:     color-mix(in oklab, oklch(8% 0.010 30) 78%, transparent);
 
     --rule:         oklch(35% 0.020 70);
@@ -436,10 +437,23 @@ html, body {
 .menu-edit-button {
     display: flex;
     align-items: center;
+    gap: 8px;
     border-left: var(--hair) solid var(--rule);
     margin-left: 16px;
     padding-left: 20px;
 }
+.menu-edit-button .menu-gear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: var(--paper-dim);
+    gap: 0;
+}
+.menu-edit-button .menu-gear:hover { color: var(--vermillion); }
+.menu-edit-button .menu-gear svg { display: block; }
 .menu-edit-button button {
     display: inline-flex;
     align-items: center;
@@ -503,7 +517,7 @@ html, body {
     width: min(1200px, 100%);
     height: 100%;
     max-height: 96vh;
-    background: var(--ink-card);
+    background: color-mix(in oklab, oklch(9% 0.010 30) calc(var(--editor-panel-opacity) * 100%), transparent);
     backdrop-filter: blur(28px) saturate(108%);
     -webkit-backdrop-filter: blur(28px) saturate(108%);
     border: var(--hair) solid var(--rule);
@@ -560,6 +574,7 @@ html, body {
 }
 
 /* Resize handle on the inner edge of the docked panel */
+/* Wide invisible hit area for easy grabbing; thin visible line via ::after */
 .dock-resize-handle {
     position: absolute;
     top: 0;
@@ -568,8 +583,7 @@ html, body {
     cursor: ew-resize;
     z-index: 50;
     display: none;
-    background: color-mix(in oklab, var(--vermillion) 12%, transparent);
-    transition: background-color 120ms ease-out, width 120ms ease-out;
+    background: transparent;
     touch-action: none;
 }
 #editorOverlay.dock-left  .dock-resize-handle { display: block; right: 0; }
@@ -577,24 +591,18 @@ html, body {
 .dock-resize-handle::after {
     content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 2px;
-    height: 28px;
-    transform: translate(-50%, -50%);
-    background: var(--vermillion);
-    opacity: 0.55;
-    border-radius: 1px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: color-mix(in oklab, var(--vermillion) 30%, transparent);
+    transition: background-color 120ms ease-out, width 120ms ease-out;
 }
-.dock-resize-handle:hover,
-.dock-resize-handle.is-dragging {
-    background: color-mix(in oklab, var(--vermillion) 55%, transparent);
-    width: 18px;
-}
+#editorOverlay.dock-left  .dock-resize-handle::after { right: 0; }
+#editorOverlay.dock-right .dock-resize-handle::after { left:  0; }
 .dock-resize-handle:hover::after,
 .dock-resize-handle.is-dragging::after {
-    opacity: 1;
-    height: 44px;
+    background: color-mix(in oklab, var(--vermillion) 70%, transparent);
+    width: 5px;
 }
 
 /* While dragging, force the resize cursor everywhere (override cm-content's text cursor) */
@@ -1102,6 +1110,54 @@ body.dock-resizing * {
     letter-spacing: 0.1em;
     margin-left: 2px;
     font-weight: 400;
+}
+
+/* Select dropdown — terminal-style, matches font-stepper / range aesthetic */
+.select-control {
+    grid-area: ctrl;
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    position: relative;
+}
+.select-control::after {
+    content: '▾';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--vermillion);
+    pointer-events: none;
+    font-size: 11px;
+    line-height: 1;
+}
+.select-control select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: var(--hair) solid var(--rule);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 7px 32px 7px 12px;
+    cursor: pointer;
+    min-width: 180px;
+    transition: border-color 160ms ease-out, color 160ms ease-out, background-color 160ms ease-out;
+}
+.select-control select:hover {
+    border-color: var(--vermillion);
+    color: var(--vermillion);
+    background-color: color-mix(in oklab, var(--vermillion) 8%, transparent);
+}
+.select-control select:focus {
+    outline: none;
+    border-color: var(--vermillion);
+}
+.select-control select option {
+    background: var(--ink-card);
+    color: var(--paper);
 }
 
 /* ============================================================
