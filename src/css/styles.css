@@ -1782,7 +1782,12 @@ body.drag-over::after {
     .dock-stepper { display: none; }
     .dock-resize-handle { display: none !important; }
     #editorHeader { padding: 14px var(--inset) 10px; flex-wrap: wrap; gap: 12px; }
-    #editorHeader h2 { font-size: 22px; }
+    #editorHeader h2 {
+        font-size: 22px;
+        flex: 0 0 100%;
+        word-break: normal;
+        overflow-wrap: anywhere;
+    }
     #editorHeader .gear-btn,
     .font-stepper { min-height: 40px; }
     .font-stepper .fs-btn { min-width: 40px; touch-action: manipulation; }
