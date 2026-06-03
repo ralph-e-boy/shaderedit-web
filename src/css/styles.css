@@ -1828,3 +1828,51 @@ body.drag-over::after {
     }
     .category-header { padding: 14px 0; min-height: 44px; touch-action: manipulation; }
 }
+
+/* ============================================================
+   WebGL-unavailable notice
+   Shown when the browser can't start a WebGL context (e.g. Chrome
+   with hardware acceleration disabled). The editor stays usable;
+   this only explains the blank preview behind it.
+   ============================================================ */
+.webgl-unsupported {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    pointer-events: none;
+}
+.webgl-unsupported .wu-card {
+    pointer-events: auto;
+    max-width: 460px;
+    padding: 28px 32px;
+    background: var(--ink-card);
+    border: var(--hair) solid var(--rule);
+    box-shadow: inset 0 0 0 var(--hair) var(--rule-hair);
+    color: var(--paper);
+}
+.webgl-unsupported .wu-title {
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vermillion);
+    margin-bottom: 12px;
+}
+.webgl-unsupported .wu-body {
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 14px;
+}
+.webgl-unsupported .wu-hint {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--paper-muted);
+    margin: 0;
+}
+.webgl-unsupported .wu-hint code {
+    color: var(--paper-dim);
+    font-family: var(--mono);
+}

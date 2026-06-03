@@ -17,10 +17,17 @@ export class ShaderRenderer {
         `;
     }
 
+    // Acquire a WebGL context. Returns true on success, false when WebGL is
+    // unavailable (hardware acceleration off, GPU blocklisted, remote session,
+    // older GPU). On failure we surface a visible message and return false
+    // rather than throwing — the editor must keep working without a preview.
     init() {
-        this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+        this.gl = this.canvas.getContext('webgl')
+            || this.canvas.getContext('experimental-webgl')
+            || this.canvas.getContext('webgl2');
         if (!this.gl) {
-            throw new Error('WebGL not supported');
+            this.showUnsupportedMessage();
+            return false;
         }
 
         // Enable shader derivative functions (fwidth, dFdx, dFdy).
@@ -33,6 +40,23 @@ export class ShaderRenderer {
 
         // Setup mouse tracking
         this.setupMouseTracking();
+
+        return true;
+    }
+
+    showUnsupportedMessage() {
+        if (document.getElementById('webglUnsupported')) return;
+        const banner = document.createElement('div');
+        banner.id = 'webglUnsupported';
+        banner.className = 'webgl-unsupported';
+        banner.innerHTML = `
+            <div class="wu-card">
+                <div class="wu-title">live preview unavailable</div>
+                <p class="wu-body">This browser couldn't start WebGL, so the shader preview can't render. The editor still works — your code is safe.</p>
+                <p class="wu-hint">In Chrome: Settings → System → enable "Use graphics acceleration when available", then relaunch. Or visit <code>chrome://gpu</code> to check WebGL status.</p>
+            </div>
+        `;
+        document.body.appendChild(banner);
     }
 
     setupQuad() {
@@ -58,6 +82,9 @@ export class ShaderRenderer {
     }
 
     setFragmentShader(fragmentSource) {
+        if (!this.gl) {
+            return { success: false, error: 'WebGL unavailable in this browser — live preview is disabled.' };
+        }
         try {
             if (this.program) {
                 this.gl.deleteProgram(this.program);

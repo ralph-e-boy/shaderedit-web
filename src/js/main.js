@@ -24,7 +24,12 @@ class ShaderApp {
         const defaultCode = await response.text();
 
         await this.settings.init();
-        this.renderer.init();
+
+        // The editor must come up regardless of whether WebGL is available.
+        // renderer.init() returns false (no longer throws) when WebGL can't
+        // start — common on Chrome when hardware acceleration is off or the
+        // GPU is blocklisted — so a failed preview never blocks the editor.
+        const rendererReady = this.renderer.init();
         this.editor.init(defaultCode);
 
         // Set the title BEFORE awaiting library load (which is slow).
@@ -34,7 +39,9 @@ class ShaderApp {
 
         await this.ui.init();
 
-        this.renderer.startRenderLoop();
+        if (rendererReady) {
+            this.renderer.startRenderLoop();
+        }
     }
 }
 
